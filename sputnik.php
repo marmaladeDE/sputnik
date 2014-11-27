@@ -439,20 +439,19 @@ class filehandling
     }
 }
 
+/**
+ * Copy the whole file to the remote host.
+ * This is different to the original version.
+ * 
+ * @return string name of the remote file
+ */
 function launchSputnik()
 {
     $buffer = file_get_contents(dirname(__FILE__)."/sputnik.php");
     
-    $a1 = explode("//sputnik start", $buffer);
-    $a2 = explode("//sputnik end", $a1[1]);
-    
-    $contents = $a2[0];
-    
     $filename = md5(microtime()).".php";
     
-    file_put_contents(dirname(__FILE__)."/".$filename, "<?php\n");
-    file_put_contents(dirname(__FILE__)."/".$filename, $contents, FILE_APPEND);
-    file_put_contents(dirname(__FILE__)."/".$filename, "dumpLocalDb(); ?>", FILE_APPEND);
+    file_put_contents(dirname(__FILE__)."/".$filename, $buffer);
     
     return $filename;
 }
