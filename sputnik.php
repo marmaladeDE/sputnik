@@ -35,36 +35,9 @@
 
 //mark
 
-//init
-/*
- * Rename this file and set the $firstStart option
- * Redirect to the new file
- */
-if (!isset($firstStart)) {
-    $sputnikFileName = md5(microtime());
-
-    $sputnik = file_get_contents(__FILE__);
-        
-    $sputnik = str_replace("<sputnik_key>", md5(rand().microtime()), $sputnik);
-    $sputnik = str_replace("//mark", '$firstStart = 1;', $sputnik);
-        
-    file_put_contents(dirname(__FILE__) ."/".$sputnikFileName.".php", $sputnik);
-
-    unlink(__FILE__);
-    
-    header("Location: http://".$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"])."/".$sputnikFileName.".php");
-    
-    exit(0);
-}
-
-//sputnik start
-
 // AES Schlüssel
 $sKey    = "<sputnik_key>";
 $useAES = true;
-
-//error_reporting(E_ALL ^ E_ALL);
-//ini_set('display_errors','Off');
 
 ini_set('max_execution_time', 0);
 ini_set('memory_limit', -1);
@@ -272,9 +245,10 @@ class database
     }
 }
 
-
-//sputnik end
-
+/**
+ * Everything for the file handling copying etc.
+ * is collected here.
+ */
 class filehandling
 {
     public function recDownload($localDir, $remoteDir, $ftpConn)
@@ -464,6 +438,27 @@ function hexToStr($hex)
         $string .= chr(hexdec($hex[$i].$hex[$i+1]));
     }
     return $string;
+}
+
+/*
+ * Rename this file and set the $firstStart option
+ * Redirect to the new file
+ */
+if (!isset($firstStart)) {
+    $sputnikFileName = md5(microtime());
+
+    $sputnik = file_get_contents(__FILE__);
+        
+    $sputnik = str_replace("<sputnik_key>", md5(rand().microtime()), $sputnik);
+    $sputnik = str_replace("//mark", '$firstStart = 1;', $sputnik);
+        
+    file_put_contents(dirname(__FILE__) ."/".$sputnikFileName.".php", $sputnik);
+
+    unlink(__FILE__);
+    
+    header("Location: http://".$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"])."/".$sputnikFileName.".php");
+    
+    exit(0);
 }
 
 if ($_REQUEST["ajax"] == 1) {
