@@ -465,89 +465,6 @@ if ($_REQUEST["ajax"] == 1) {
     if ($_REQUEST["randomize"] == 1) {
         echo md5(microtime());
     }
-
-    if ($_REQUEST["installStep"] == 1) {
-        echo "Sputnik startet, der Countdown läuft, bitte warten...<br />";
-    }
-
-    if ($_REQUEST["installStep"] == 2) {
-        // call to PLESK API to create DB was removed here, feel free to add it as you like
-        
-        downloadFile("http://www.download.oxid-esales.com.server675-han.de-nserver.de/ce/index.php", "oxid.zip");
-        
-        echo "Aktuelle OXID Version wurde heruntergeladen<br />";
-    }
-    
-    if ($_REQUEST["installStep"] == 3) {
-        unpackFile("oxid.zip");
-        echo "Daten wurde extrahiert, die Installation beginnt<br />";
-    }
-    
-    if ($_REQUEST["installStep"] == 5) {
-        chmodRec(dirname(__FILE__)."/tmp/", 0777, 0777);
-        chmodRec(dirname(__FILE__)."/export/", 0777, 0777);
-        
-        chmod(dirname(__FILE__).'/.htaccess', 0777);
-        chmod(dirname(__FILE__)."/config.inc.php", 0777);
-        
-        chmodRec(dirname(__FILE__)."/log/", 0777, 0777);
-        chmodRec(dirname(__FILE__)."/out/", 0777, 0777);
-        
-        $config = file_get_contents(dirname(__FILE__)."/config.inc.php");
-        
-        $config = str_replace("<dbHost_ce>", $_REQUEST["host"], $config);
-        $config = str_replace("<dbName_ce>", $_REQUEST["name"], $config);
-        $config = str_replace("<dbUser_ce>", $_REQUEST["user"], $config);
-        $config = str_replace("<dbPwd_ce>", $_REQUEST["pass"], $config);
-        $config = str_replace("<sShopURL_ce>", "http://".$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"]), $config);
-        $config = str_replace("<sShopDir_ce>", dirname(__FILE__), $config);
-        $config = str_replace("<sCompileDir_ce>", dirname(__FILE__)."/tmp", $config);
-        $config = str_replace("<iUtfMode>", 0, $config);
-        
-        file_put_contents(dirname(__FILE__)."/config.inc.php", $config);
-        
-        echo "Dateirechte wurden gesetzt, die Config Datei wurde bearbeitet<br />";
-    }
-    
-    if ($_REQUEST["installStep"] == 5) {
-        $useAES = false;
-        
-        importDb($_REQUEST["user"], $_REQUEST["pass"], $_REQUEST["host"], $_REQUEST["name"], dirname(__FILE__)."/setup/sql/database.sql");
-        
-        echo "Datenbank wurde initalisiert<br />";
-    }
-    
-    if ($_REQUEST["installStep"] == 6) {
-        chmod(dirname(__FILE__).'/.htaccess', 0555);
-        chmod(dirname(__FILE__)."/config.inc.php", 0555);
-        
-        rrmdir(dirname(__FILE__)."/setup");
-        
-        unlink(dirname(__FILE__)."/".$_SERVER["PHP_SELF"]);
-        
-        $newPass = md5(microtime());
-        $newPass = substr($newPass, 0, 7);
-        
-        $salt = substr(md5(microtime()), 12, 10);
-        
-        $hash = md5($newPass.hexToStr($salt));
-        
-        $link = mysql_connect($_REQUEST["host"], $_REQUEST["user"], $_REQUEST["pass"]);
-      
-        mysql_select_db($_REQUEST["name"], $link);
-        
-        mysql_query('UPDATE oxuser SET OXPASSWORD = "'.$hash.'", OXPASSSALT = "'.$salt.'" WHERE OXID = "oxdefaultadmin"');
-        
-        mysql_close();
-        
-        echo "======= Admin Daten =======<br />" ;
-        echo "User: admin <br/>";
-        echo "Passwort: ".$newPass."<br />";
-        echo "===========================<br />";
-        
-        echo "Setup abgeschlossen!<br />";
-        echo 'OXID wurde installiert, <a href="http://'.$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"]).'" target="_blank">hier klicken</a> um zum Shop zu gelangen<br />';
-    }
     
     if ($_REQUEST["spaceStep"] == 1) {
         echo "Drohne wird gestartet ...<br />";
@@ -790,57 +707,9 @@ input[type='password'] {
 				}
 			});
 	}
-
-	function installOxid(step) {
-		
-			var host = $("#host").val();
-			var user = $("#user").val();
-			var name = $("#name").val();
-			var pass = $("#pass").val();
-		
-			$.post("<?php $_SERVER['SCRIPT_NAME'] ?>", {
-					'ajax'	   			: 	'1',
-					'installStep'		:	step,
-					'host'				:	host,
-					'user'				:	user,
-					'name'				:	name,
-					'pass'				:	pass,
-			},
-			function(resdata){
-				$("#result").append(resdata);
-				if(step != 6) {
-					step++;
-					installOxid(step);
-				}
- 			});
-	
-	}
 	
 	var isShown = 0;
-	
-	function startInstall() {
-		
-		endAnim = 1;
-
-		$("#todo").fadeOut("slow");
-		
-		$("#host").prop('disabled', true);
-		$("#user").prop('disabled', true);
-		$("#name").prop('disabled', true);
-		$("#pass").prop('disabled', true);
-		$("#ftpServer").prop('disabled', true);
-		$("#ftpUser").prop('disabled', true);
-		$("#ftpPass").prop('disabled', true);
-		$("#ftpPath").prop('disabled', true);
-		$("#shopUrl").prop('disabled', true);
-		
-		if(isShown == 0) {
-			isShown = 1;
-			$("#result").slideToggle('slow');
-			installOxid(1);
-		}
-	}
-	
+        
 	function startClone() {
 		
 		endAnim = 1;
@@ -923,7 +792,6 @@ input[type='password'] {
 </div>
 <div id="todo">
 <p>Was möchten Sie tun?</p>
-<p><a href="#" onclick="javascript:startInstall();">Aktuelle OXID CE Version installieren</a></p>
 <p><a href="#" onclick="javascript:startClone();">Shop auf aktuelles Hosting clonen</a></p>
 <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
 <input type="hidden" name="cmd" value="_donations">
