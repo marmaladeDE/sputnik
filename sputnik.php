@@ -1,64 +1,62 @@
 <?php
 /*
 
-	Sputnik! Swiss Army Knife for OXID eShop
-	==================================================== 
-	
-	Sputnik! is free to use, please consider a donation
-	if you are using this software.
-	
-	LICENSE
-	
-	Copyright (c) 2012 -2013 by Alexander Pick (ap@pbt-media.com)
+    Sputnik! Swiss Army Knife for OXID eShop
+    ====================================================
+    
+    Sputnik! is free to use, please consider a donation
+    if you are using this software.
+    
+    LICENSE
+    
+    Copyright (c) 2012 -2013 by Alexander Pick (ap@pbt-media.com)
 
-	Permission is hereby granted, free of charge, to any person obtaining a copy of this 
-	software and associated documentation files (the "Software"), to deal in the Software 
-	without restriction, including without limitation the rights to use, copy, modify, merge, 
-	publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons 
-	to whom the Software is furnished to do so, subject to the following conditions:
-	
-	The above copyright notice and this permission notice shall be included in all copies or 
-	substantial portions of the Software.
-	
-	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
-	INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR 
-	PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE 
-	FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR 
-	OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR 
-	OTHER DEALINGS IN THE SOFTWARE.
-	
-	More on Sputnik! at https://www.pbt-media.com
-	
-	====================================================
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this
+    software and associated documentation files (the "Software"), to deal in the Software
+    without restriction, including without limitation the rights to use, copy, modify, merge,
+    publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons
+    to whom the Software is furnished to do so, subject to the following conditions:
+    
+    The above copyright notice and this permission notice shall be included in all copies or
+    substantial portions of the Software.
+    
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+    INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+    PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE
+    FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+    OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+    OTHER DEALINGS IN THE SOFTWARE.
+    
+    More on Sputnik! at https://www.pbt-media.com
+    
+    ====================================================
 
 */
 
 //mark
 
 //init
-if(!isset($firstStart)) {
-	
-	$sputnikFileName = md5(microtime());
+if (!isset($firstStart)) {
+    $sputnikFileName = md5(microtime());
 
-	$sputnik = file_get_contents(__FILE__);
-		
-	$sputnik = str_replace("<sputnik_key>", md5(rand().microtime()), $sputnik);
-	$sputnik = str_replace("//mark", '$firstStart = 1;', $sputnik);
-		
-	file_put_contents(dirname(__FILE__) ."/".$sputnikFileName.".php", $sputnik);
+    $sputnik = file_get_contents(__FILE__);
+        
+    $sputnik = str_replace("<sputnik_key>", md5(rand().microtime()), $sputnik);
+    $sputnik = str_replace("//mark", '$firstStart = 1;', $sputnik);
+        
+    file_put_contents(dirname(__FILE__) ."/".$sputnikFileName.".php", $sputnik);
 
-	unlink(__FILE__);
-	
-	header("Location: http://".$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"])."/".$sputnikFileName.".php");
-	
-	exit(0);
-
+    unlink(__FILE__);
+    
+    header("Location: http://".$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"])."/".$sputnikFileName.".php");
+    
+    exit(0);
 }
 
 //sputnik start
 
 // AES Schlüssel
-$sKey 	= "<sputnik_key>";
+$sKey    = "<sputnik_key>";
 $useAES = true;
 
 //error_reporting(E_ALL ^ E_ALL);
@@ -71,395 +69,350 @@ set_time_limit(0);
 header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
 header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Datum in der Vergangenheit
 
-class confStub 
+class confStub
 {
-	public function __construct() {
-		require(dirname(__FILE__)."/config.inc.php");
-	}
+    public function __construct()
+    {
+        require(dirname(__FILE__)."/config.inc.php");
+    }
 }
 
 function aesEncrypt($sValue, $sSecretKey)
 {
-	if($useAES == false) {
-		return $sValue;	
-	}
-	
+    if ($useAES == false) {
+        return $sValue;
+    }
+    
     return trim(
         base64_encode(
             mcrypt_encrypt(
                 MCRYPT_RIJNDAEL_256,
-                $sSecretKey, $sValue, 
-                MCRYPT_MODE_ECB, 
+                $sSecretKey, $sValue,
+                MCRYPT_MODE_ECB,
                 mcrypt_create_iv(
                     mcrypt_get_iv_size(
-                        MCRYPT_RIJNDAEL_256, 
+                        MCRYPT_RIJNDAEL_256,
                         MCRYPT_MODE_ECB
-                    ), 
+                    ),
                     MCRYPT_RAND)
                 )
             )
         );
 }
 
-function backupTables($host,$user,$pass,$name,$tables = '*')
+function backupTables($host, $user, $pass, $name, $tables = '*')
 {
-  
-  $link = mysql_connect($host,$user,$pass);
+    $link = mysql_connect($host, $user, $pass);
       
-  mysql_select_db($name,$link);
+    mysql_select_db($name, $link);
   
-  if($tables == '*')
-  {
-    $tables = array();
-    $result = mysql_query('SHOW TABLES');
-    while($row = mysql_fetch_row($result))
-    {
-      $tables[] = $row[0];
+    if ($tables == '*') {
+        $tables = array();
+        $result = mysql_query('SHOW TABLES');
+        while ($row = mysql_fetch_row($result)) {
+            $tables[] = $row[0];
+        }
+    } else {
+        $tables = is_array($tables) ? $tables : explode(',', $tables);
     }
-  }
-  else
-  {
-    $tables = is_array($tables) ? $tables : explode(',',$tables);
-  }
   
-  $aViews 	= array();
-  $aTables 	= array(); 
+    $aViews    = array();
+    $aTables    = array();
   
-  foreach($tables as $sTable)
-  { 
-  	
-	if(strpos($sTable, 'oxv_') !== false) {
-		
-		array_push($aViews, $sTable);
-			
-	} else {
-		
-		array_push($aTables, $sTable);
-	}
-  
-  }
+    foreach ($tables as $sTable) {
+        if (strpos($sTable, 'oxv_') !== false) {
+            array_push($aViews, $sTable);
+        } else {
+            array_push($aTables, $sTable);
+        }
+    }
  
-  $aNewTables = array_merge($aTables, $aViews);
+    $aNewTables = array_merge($aTables, $aViews);
   
-  foreach($aNewTables as $table)
-  {  
-	  
-    $result = mysql_query('SELECT * FROM '.$table);
+    foreach ($aNewTables as $table) {
+        $result = mysql_query('SELECT * FROM '.$table);
     
-	$num_fields = mysql_num_fields($result);
+        $num_fields = mysql_num_fields($result);
     
-    $return.= 'DROP TABLE '.$table.';';
-	
-    $row2 = mysql_fetch_row(mysql_query('SHOW CREATE TABLE '.$table));
+        $return.= 'DROP TABLE '.$table.';';
     
-	$return.= "\n\n".$row2[1].";\n\n";
+        $row2 = mysql_fetch_row(mysql_query('SHOW CREATE TABLE '.$table));
     
-    for ($i = 0; $i < $num_fields; $i++) 
-    {
-      while($row = mysql_fetch_row($result))
-      {
+        $return.= "\n\n".$row2[1].";\n\n";
+    
+        for ($i = 0; $i < $num_fields; $i++) {
+            while ($row = mysql_fetch_row($result)) {
+                $return.= 'INSERT INTO '.$table.' VALUES(';
         
-		$return.= 'INSERT INTO '.$table.' VALUES(';
+                for ($j=0; $j<$num_fields; $j++) {
+                    $row[$j] = mysql_real_escape_string($row[$j]);
+              
+                    if (isset($row[$j])) {
+                        $return.= '"'.$row[$j].'"' ;
+                    } else {
+                        $return.= '""';
+                    }
         
-		for($j=0; $j<$num_fields; $j++) 
-        {
-          	
-			$row[$j] = mysql_real_escape_string($row[$j]);
-          	
-			if (isset($row[$j])) { 
-		  			$return.= '"'.$row[$j].'"' ; 
-		  		} else { 
-					$return.= '""'; 
-			}
-        
-		  	if ($j<($num_fields-1)) { $return.= ','; }
-        
-		}
-        $return .= ");\n";
-      }
+                    if ($j<($num_fields-1)) {
+                        $return.= ',';
+                    }
+                }
+                $return .= ");\n";
+            }
+        }
+        $return .= "\n\n\n";
     }
-    $return .= "\n\n\n";
-  }
   
-  $timestamp = time();
+    $timestamp = time();
 
-  file_put_contents(dirname(__FILE__)."/tmp/backup-".date('dmY',$timestamp).".sql", aesEncrypt($return, $sKey));
-
+    file_put_contents(dirname(__FILE__)."/tmp/backup-".date('dmY', $timestamp).".sql", aesEncrypt($return, $sKey));
 }
 
-function dumpLocalDb() {
-	
-	$oStub = new confStub;
-	
-	$user 	= $oStub->dbUser;
-	$pass	= $oStub->dbPwd;
-	$host	= $oStub->dbHost;
-	$name 	= $oStub->dbName;
-	
-	backupTables($host,$user,$pass,$name);
+function dumpLocalDb()
+{
+    $oStub = new confStub;
+    
+    $user    = $oStub->dbUser;
+    $pass    = $oStub->dbPwd;
+    $host    = $oStub->dbHost;
+    $name    = $oStub->dbName;
+    
+    backupTables($host, $user, $pass, $name);
 }
 
 //sputnik end
 
-function recDownload($localDir, $remoteDir, $ftpConn) {
-
-	if ($remoteDir != ".") {
-	    
-		    if (ftp_chdir($ftpConn, $remoteDir) == false) {
-	    
-		        echo ("CD Fehler: ".$remoteDir."<br />\r\n");
-				exit(0);
-	            return;
-	    
-		
-		    }
-						
-			
-	        if (!(is_dir($remoteDir))) {
-	 							
-		        mkdir($remoteDir);	
-
-		
-			}
-	        chdir($remoteDir);
-	}
+function recDownload($localDir, $remoteDir, $ftpConn)
+{
+    if ($remoteDir != ".") {
+        if (ftp_chdir($ftpConn, $remoteDir) == false) {
+            echo("CD Fehler: ".$remoteDir."<br />\r\n");
+            exit(0);
+            return;
+        }
+                        
+            
+        if (!(is_dir($remoteDir))) {
+            mkdir($remoteDir);
+        }
+        chdir($remoteDir);
+    }
  
-	$contents = ftp_nlist($ftpConn, ".");
-	
-	foreach ($contents as $file) {
+    $contents = ftp_nlist($ftpConn, ".");
+    
+    foreach ($contents as $file) {
+        if ($file == '.' || $file == '..') {
+            continue;
+        }
+        if (@ftp_chdir($ftpConn, $file)) {
+            ftp_chdir($ftpConn, "..");
+            
+            recDownload($localDir, $file, $ftpConn);
+        } else {
+            ftp_get($ftpConn, "./".$file, $file, FTP_BINARY);
+        }
+    }
  
-		if ($file == '.' || $file == '..') {
-		
-			continue;
-		
-		}
-		if (@ftp_chdir($ftpConn, $file)) {
-						
-			ftp_chdir($ftpConn, "..");
-			
-			recDownload($localDir, $file, $ftpConn);
-	    
-		} else {
-		
-			ftp_get($ftpConn, "./".$file, $file, FTP_BINARY);
-		
-		}
-	}
- 
- 	ftp_chdir($ftpConn, "..");
-	
-	chdir("..");
-	
+    ftp_chdir($ftpConn, "..");
+    
+    chdir("..");
 }
 
 function aesDecrypt($sValue, $sSecretKey)
 {
-	
-	if($useAES == false) {
-		return $sValue;	
-	}
-	
-	echo "Entschlüssele Backup<br />";
-	
+    if ($useAES == false) {
+        return $sValue;
+    }
+    
+    echo "Entschlüssele Backup<br />";
+    
     return trim(
         mcrypt_decrypt(
-            MCRYPT_RIJNDAEL_256, 
-            $sSecretKey, 
-            base64_decode($sValue), 
+            MCRYPT_RIJNDAEL_256,
+            $sSecretKey,
+            base64_decode($sValue),
             MCRYPT_MODE_ECB,
             mcrypt_create_iv(
                 mcrypt_get_iv_size(
                     MCRYPT_RIJNDAEL_256,
                     MCRYPT_MODE_ECB
-                ), 
+                ),
                 MCRYPT_RAND
             )
         )
     );
 }
 
-function importDb($user, $pass, $host, $name, $file) {
+function importDb($user, $pass, $host, $name, $file)
+{
+    $connection = mysql_connect($host, $user, $pass) or die("Verbindungsversuch zur lokalen Datenbank fehlgeschlagen<br />");
 
-	$connection = mysql_connect($host, $user, $pass) or die("Verbindungsversuch zur lokalen Datenbank fehlgeschlagen<br />");
+    mysql_select_db($name, $connection) or die("Konnte die lokale Datenbank nicht selektieren<br />");
+    
+    $import = null;
 
-	mysql_select_db($name, $connection) or die("Konnte die lokale Datenbank nicht selektieren<br />");
-	
-	$import = NULL;
+    if ($useAES == false) {
+        $import = aesDecrypt(file_get_contents($file), $sKey);
+    } else {
+        $import = file_get_contents($file);
+    }
+    
+    $import = preg_replace("%/\*(.*)\*/%Us", '', $import);
+    $import = preg_replace("%^--(.*)\n%mU", '', $import);
+    $import = preg_replace("%^$\n%mU", '', $import);
 
-	if($useAES == false) {
-		$import = aesDecrypt(file_get_contents($file), $sKey);
-	} else {
-		$import = file_get_contents($file);
-	}
-	
-   	$import = preg_replace ("%/\*(.*)\*/%Us", '', $import);
-   	$import = preg_replace ("%^--(.*)\n%mU", '', $import);
-   	$import = preg_replace ("%^$\n%mU", '', $import);
+    mysql_real_escape_string($import);
+    
+    $import = explode(";\n", $import);
 
-   	mysql_real_escape_string($import); 
-	
-   	$import = explode (";\n", $import); 
-
-   	foreach ($import as $imp){
-		    
-		if ($imp != '' && $imp != ' '){
-     		
-			$result = mysql_query($imp.";");
-			
-    		if(!$result) {
-				echo mysql_error()."<br />";	
-			}
-		
-		}
-   	
-	} 
+    foreach ($import as $imp) {
+        if ($imp != '' && $imp != ' ') {
+            $result = mysql_query($imp.";");
+            
+            if (!$result) {
+                echo mysql_error()."<br />";
+            }
+        }
+    }
 }
 
 function launchSputnik()
 {
-	$buffer = file_get_contents(dirname(__FILE__)."/sputnik.php");
-	
-	$a1 = explode("//sputnik start",$buffer); 
-	$a2 = explode("//sputnik end",$a1[1]);
-	
-	$contents = $a2[0];
-	
-	$filename = md5(microtime()).".php";
-	
-	file_put_contents(dirname(__FILE__)."/".$filename, "<?php\n");
-	file_put_contents(dirname(__FILE__)."/".$filename, $contents, FILE_APPEND);
-	file_put_contents(dirname(__FILE__)."/".$filename, "dumpLocalDb(); ?>", FILE_APPEND);
-	
-	return $filename;
+    $buffer = file_get_contents(dirname(__FILE__)."/sputnik.php");
+    
+    $a1 = explode("//sputnik start", $buffer);
+    $a2 = explode("//sputnik end", $a1[1]);
+    
+    $contents = $a2[0];
+    
+    $filename = md5(microtime()).".php";
+    
+    file_put_contents(dirname(__FILE__)."/".$filename, "<?php\n");
+    file_put_contents(dirname(__FILE__)."/".$filename, $contents, FILE_APPEND);
+    file_put_contents(dirname(__FILE__)."/".$filename, "dumpLocalDb(); ?>", FILE_APPEND);
+    
+    return $filename;
 }
 
 function chmodRec($path, $filePerm=0644, $dirPerm=0755)
-   {
-      if(!file_exists($path))
-      {
-         return false;
-      }
-      if(is_file($path))
-      {
-         chmod($path, $filePerm);
-      } elseif(is_dir($path)) {
-         $foldersAndFiles = scandir($path);
-         $entries = array_slice($foldersAndFiles, 2);
-         foreach($entries as $entry)
-         {
+{
+    if (!file_exists($path)) {
+        return false;
+    }
+    if (is_file($path)) {
+        chmod($path, $filePerm);
+    } elseif (is_dir($path)) {
+        $foldersAndFiles = scandir($path);
+        $entries = array_slice($foldersAndFiles, 2);
+        foreach ($entries as $entry) {
             chmodRec($path."/".$entry, $filePerm, $dirPerm);
-         }
-         chmod($path, $dirPerm);
-      }
-      return true;
-   }
+        }
+        chmod($path, $dirPerm);
+    }
+    return true;
+}
    
-function mkdirParents($d,$umask = 0777) {
-	
+function mkdirParents($d, $umask = 0777)
+{
     $dirs = array($d);
     $d = dirname($d);
     $last_dirname = '';
-	
-    while($last_dirname != $d) { 
-        array_unshift($dirs,$d);
+    
+    while ($last_dirname != $d) {
+        array_unshift($dirs, $d);
         $last_dirname = $d;
         $d = dirname($d);
     }
 
     foreach ($dirs as $dir) {
         if (! file_exists($dir)) {
-            if (! mkdir($dir,$umask)) {
-                echo ("Can't make directory: ".$dir."<br />");
+            if (! mkdir($dir, $umask)) {
+                echo("Can't make directory: ".$dir."<br />");
                 return false;
             }
         } elseif (! is_dir($dir)) {
-            echo ($dir." is not a directory<br />");
+            echo($dir." is not a directory<br />");
             return false;
         }
     }
-	
-    return true;
-}   
-
-function unpackFile($file_name) {
-	
-	echo "Entpacke OXID Installation ... <br />";
     
-	$z = zip_open(dirname(__FILE__)."/".$file_name) or die("Fehler beim öffnen des Archiv: ".$file_name.": ".$php_errormsg);
-	
-	while ($entry = zip_read($z)) {
-		
-		$entry_name = zip_entry_name($entry);
-								
-		$dir = dirname($entry_name);
-		
-		if(!zip_entry_filesize($entry))
-		{
-			$dir = $entry_name;	
-		}
-		
-		if (!is_dir($dir)) 
-		{ 
-			mkdirParents($dir); 
-		}
-	
-		$file = basename($entry_name);
-	
-		if (zip_entry_open($z,$entry)) {
-			if ($fh = fopen($dir.'/'.$file,'w')) {
-				fwrite($fh,	zip_entry_read($entry,zip_entry_filesize($entry)));
-				fclose($fh);
-			} 
-			zip_entry_close($entry);
-		} 
-	}
-	
-    return true;	
+    return true;
 }
 
-function rrmdir($dir) { 
+function unpackFile($file_name)
+{
+    echo "Entpacke OXID Installation ... <br />";
+    
+    $z = zip_open(dirname(__FILE__)."/".$file_name) or die("Fehler beim öffnen des Archiv: ".$file_name.": ".$php_errormsg);
+    
+    while ($entry = zip_read($z)) {
+        $entry_name = zip_entry_name($entry);
+                                
+        $dir = dirname($entry_name);
+        
+        if (!zip_entry_filesize($entry)) {
+            $dir = $entry_name;
+        }
+        
+        if (!is_dir($dir)) {
+            mkdirParents($dir);
+        }
+    
+        $file = basename($entry_name);
+    
+        if (zip_entry_open($z, $entry)) {
+            if ($fh = fopen($dir.'/'.$file, 'w')) {
+                fwrite($fh,    zip_entry_read($entry, zip_entry_filesize($entry)));
+                fclose($fh);
+            }
+            zip_entry_close($entry);
+        }
+    }
+    
+    return true;
+}
 
-   if (is_dir($dir)) { 
+function rrmdir($dir)
+{
+    if (is_dir($dir)) {
+        $objects = scandir($dir);
 
-     $objects = scandir($dir); 
+        foreach ($objects as $object) {
+            if ($object != "." && $object != "..") {
+                if (filetype($dir."/".$object) == "dir") {
+                    rrmdir($dir."/".$object);
+                } else {
+                    unlink($dir."/".$object);
+                }
+            }
+        }
 
-     foreach ($objects as $object) { 
-
-       if ($object != "." && $object != "..") { 
-         if (filetype($dir."/".$object) == "dir") rrmdir($dir."/".$object); else unlink($dir."/".$object); 
-       } 
-
-     } 
-
-     reset($objects); 
-     rmdir($dir); 
-
-   } 
-
- }
+        reset($objects);
+        rmdir($dir);
+    }
+}
 
 function downloadFile($url, $filename)
 {
-		
-	unlink(realpath(dirname(__FILE__)."/".$filename));
-	
-	echo "Download der neusten OXID CE Version ... <br />";
-	
-	$path = dirname(__FILE__)."/".$filename;
-	
-	$timeout = 920;
-	
+    unlink(realpath(dirname(__FILE__)."/".$filename));
+    
+    echo "Download der neusten OXID CE Version ... <br />";
+    
+    $path = dirname(__FILE__)."/".$filename;
+    
+    $timeout = 920;
+    
     $fp = fopen($path, 'w');
-	
-	$ch = curl_init();
-	
-	curl_setopt($ch,CURLOPT_URL,$url);
-	curl_setopt($ch,CURLOPT_CONNECTTIMEOUT,$timeout);
+    
+    $ch = curl_init();
+    
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
     curl_setopt($ch, CURLOPT_FILE, $fp);
-	
-	$data = curl_exec($ch);
-	
-	curl_close($ch);
+    
+    $data = curl_exec($ch);
+    
+    curl_close($ch);
     fclose($fp);
 
     return $filename;
@@ -468,228 +421,206 @@ function downloadFile($url, $filename)
 function hexToStr($hex)
 {
     $string='';
-    for ($i=0; $i < strlen($hex)-1; $i+=2)
-    {
+    for ($i=0; $i < strlen($hex)-1; $i+=2) {
         $string .= chr(hexdec($hex[$i].$hex[$i+1]));
     }
     return $string;
 }
 
-if($_REQUEST["ajax"] == 1) {
-	
-	if($_REQUEST["randomize"] == 1) {
-		echo md5(microtime());	
-	}
+if ($_REQUEST["ajax"] == 1) {
+    if ($_REQUEST["randomize"] == 1) {
+        echo md5(microtime());
+    }
 
-	if($_REQUEST["installStep"] == 1) {
-		echo "Sputnik startet, der Countdown läuft, bitte warten...<br />";	
-	}
+    if ($_REQUEST["installStep"] == 1) {
+        echo "Sputnik startet, der Countdown läuft, bitte warten...<br />";
+    }
 
-	if($_REQUEST["installStep"] == 2) {
-		
-		// call to PLESK API to create DB was removed here, feel free to add it as you like
-		
-		downloadFile("http://www.download.oxid-esales.com.server675-han.de-nserver.de/ce/index.php", "oxid.zip");
-		
-		echo "Aktuelle OXID Version wurde heruntergeladen<br />";
-
-	}
-	
-	if($_REQUEST["installStep"] == 3) {
-		
-		unpackFile("oxid.zip");
-		echo "Daten wurde extrahiert, die Installation beginnt<br />";
-	
-	}
-	
-	if($_REQUEST["installStep"] == 5) {
-		
-		chmodRec(dirname(__FILE__)."/tmp/", 0777, 0777);
-		chmodRec(dirname(__FILE__)."/export/", 0777, 0777);
-		
-		chmod(dirname(__FILE__).'/.htaccess', 0777);
-		chmod(dirname(__FILE__)."/config.inc.php", 0777);
-		
-		chmodRec(dirname(__FILE__)."/log/", 0777, 0777);
-		chmodRec(dirname(__FILE__)."/out/", 0777, 0777);
-		
-		$config = file_get_contents(dirname(__FILE__)."/config.inc.php");
-		
-		$config = str_replace("<dbHost_ce>", $_REQUEST["host"], $config);
-		$config = str_replace("<dbName_ce>", $_REQUEST["name"], $config);
-		$config = str_replace("<dbUser_ce>", $_REQUEST["user"], $config);
-		$config = str_replace("<dbPwd_ce>", $_REQUEST["pass"], $config);
-		$config = str_replace("<sShopURL_ce>", "http://".$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"]), $config);
-		$config = str_replace("<sShopDir_ce>", dirname(__FILE__), $config);
-		$config = str_replace("<sCompileDir_ce>", dirname(__FILE__)."/tmp", $config);
-		$config = str_replace("<iUtfMode>", 0, $config);
-		
-		file_put_contents(dirname(__FILE__)."/config.inc.php", $config);
-		
-		echo "Dateirechte wurden gesetzt, die Config Datei wurde bearbeitet<br />";
-	}
-	
-	if($_REQUEST["installStep"] == 5) {
-		
-		$useAES = false;
-		
-		importDb( $_REQUEST["user"], $_REQUEST["pass"], $_REQUEST["host"], $_REQUEST["name"], dirname(__FILE__)."/setup/sql/database.sql");
-		
-		echo "Datenbank wurde initalisiert<br />";
-		
-		
-	}
-	
-	if($_REQUEST["installStep"] == 6) {
-		
-		chmod(dirname(__FILE__).'/.htaccess', 0555);
-		chmod(dirname(__FILE__)."/config.inc.php", 0555);
-		
-		rrmdir(dirname(__FILE__)."/setup");
-		
-		unlink(dirname(__FILE__)."/".$_SERVER["PHP_SELF"]);
-		
-		$newPass = md5(microtime());
-		$newPass = substr($newPass,0,7);
-		
-		$salt = substr(md5(microtime()),12,10);
-		
-		$hash = md5($newPass.hexToStr($salt));
-		
-		$link = mysql_connect($_REQUEST["host"],$_REQUEST["user"],$_REQUEST["pass"]);
+    if ($_REQUEST["installStep"] == 2) {
+        // call to PLESK API to create DB was removed here, feel free to add it as you like
+        
+        downloadFile("http://www.download.oxid-esales.com.server675-han.de-nserver.de/ce/index.php", "oxid.zip");
+        
+        echo "Aktuelle OXID Version wurde heruntergeladen<br />";
+    }
+    
+    if ($_REQUEST["installStep"] == 3) {
+        unpackFile("oxid.zip");
+        echo "Daten wurde extrahiert, die Installation beginnt<br />";
+    }
+    
+    if ($_REQUEST["installStep"] == 5) {
+        chmodRec(dirname(__FILE__)."/tmp/", 0777, 0777);
+        chmodRec(dirname(__FILE__)."/export/", 0777, 0777);
+        
+        chmod(dirname(__FILE__).'/.htaccess', 0777);
+        chmod(dirname(__FILE__)."/config.inc.php", 0777);
+        
+        chmodRec(dirname(__FILE__)."/log/", 0777, 0777);
+        chmodRec(dirname(__FILE__)."/out/", 0777, 0777);
+        
+        $config = file_get_contents(dirname(__FILE__)."/config.inc.php");
+        
+        $config = str_replace("<dbHost_ce>", $_REQUEST["host"], $config);
+        $config = str_replace("<dbName_ce>", $_REQUEST["name"], $config);
+        $config = str_replace("<dbUser_ce>", $_REQUEST["user"], $config);
+        $config = str_replace("<dbPwd_ce>", $_REQUEST["pass"], $config);
+        $config = str_replace("<sShopURL_ce>", "http://".$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"]), $config);
+        $config = str_replace("<sShopDir_ce>", dirname(__FILE__), $config);
+        $config = str_replace("<sCompileDir_ce>", dirname(__FILE__)."/tmp", $config);
+        $config = str_replace("<iUtfMode>", 0, $config);
+        
+        file_put_contents(dirname(__FILE__)."/config.inc.php", $config);
+        
+        echo "Dateirechte wurden gesetzt, die Config Datei wurde bearbeitet<br />";
+    }
+    
+    if ($_REQUEST["installStep"] == 5) {
+        $useAES = false;
+        
+        importDb($_REQUEST["user"], $_REQUEST["pass"], $_REQUEST["host"], $_REQUEST["name"], dirname(__FILE__)."/setup/sql/database.sql");
+        
+        echo "Datenbank wurde initalisiert<br />";
+    }
+    
+    if ($_REQUEST["installStep"] == 6) {
+        chmod(dirname(__FILE__).'/.htaccess', 0555);
+        chmod(dirname(__FILE__)."/config.inc.php", 0555);
+        
+        rrmdir(dirname(__FILE__)."/setup");
+        
+        unlink(dirname(__FILE__)."/".$_SERVER["PHP_SELF"]);
+        
+        $newPass = md5(microtime());
+        $newPass = substr($newPass, 0, 7);
+        
+        $salt = substr(md5(microtime()), 12, 10);
+        
+        $hash = md5($newPass.hexToStr($salt));
+        
+        $link = mysql_connect($_REQUEST["host"], $_REQUEST["user"], $_REQUEST["pass"]);
       
-  		mysql_select_db($_REQUEST["name"],$link);
-		
-		mysql_query('UPDATE oxuser SET OXPASSWORD = "'.$hash.'", OXPASSSALT = "'.$salt.'" WHERE OXID = "oxdefaultadmin"');
-		
-		mysql_close();
-		
-		echo "======= Admin Daten =======<br />" ;
-		echo "User: admin <br/>";
-		echo "Passwort: ".$newPass."<br />";
-		echo "===========================<br />";
-		
-		echo "Setup abgeschlossen!<br />";
-		echo 'OXID wurde installiert, <a href="http://'.$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"]).'" target="_blank">hier klicken</a> um zum Shop zu gelangen<br />';
-		
-	}
-	
-	if($_REQUEST["spaceStep"] == 1) {
-		
-		echo "Drohne wird gestartet ...<br />";
-		echo "Erstelle Dump der remote DB <br />";
-		
-	}
-	
-	if($_REQUEST["spaceStep"] == 2) {
-		
-		$sputnikDrone = launchSputnik();
-		
-		$connection = ftp_connect($_REQUEST["ftpServer"]);
-	
-		$login = ftp_login($connection, $_REQUEST["ftpUser"], $_REQUEST["ftpPass"]);
-	
-		if (!$connection || !$login) {
-			 unlink(dirname(__FILE)."/".$sputnikDrone);
-			 die('Sputnik! konnte sich nicht zum FTP Host verbinden!<br />'); 
-		}
-		
-		ftp_pasv($connection , true);
-	
-		$upload = ftp_put($connection, $_REQUEST["ftpPath"]."/".$sputnikDrone, dirname(__FILE__)."/".$sputnikDrone, FTP_BINARY);
-	
-		unlink(dirname(__FILE__)."/".$sputnikDrone);
-	
-		if (!$upload) { 		
-			die('FTP upload Fehler!<br />'); 
-		}
-		
-		file_get_contents($_REQUEST["shopUrl"]."/".$sputnikDrone);
-		
-		ftp_delete($connection, $_REQUEST["ftpPath"]."/".$sputnikDrone); 
-				
-		echo "MySQL dump ausgeführt, importiere Datenbank ...<br />";
-	
-	}
-	
-	if($_REQUEST["spaceStep"] == 3) {
-			
-		$timestamp = time();
-		
-		$connection = ftp_connect($_REQUEST["ftpServer"]);
-	
-		$login = ftp_login($connection, $_REQUEST["ftpUser"], $_REQUEST["ftpPass"]);
-		
-		$remoteFile = $_REQUEST["ftpPath"]."/tmp/backup-".date('dmY',$timestamp).".sql";
-		
-		ftp_get($connection, dirname(__FILE__)."/backup-".date('dmY',$timestamp).".sql", $remoteFile, FTP_BINARY);
-		
-		ftp_delete($connection, $remoteFile); 
-		
-		ftp_close($connection);
-		
-		importDb($_REQUEST["user"],$_REQUEST["pass"],$_REQUEST["host"],$_REQUEST["name"],dirname(__FILE__)."/backup-".date('dmY',$timestamp).".sql");
-		
-		unlink(dirname(__FILE__)."/backup-".date('dmY',$timestamp).".sql");
-	
-		echo "Hole Shopdaten vom Remote Server<br />";
-	
-	}
-	
-	if($_REQUEST["spaceStep"] == 4) {
-		
-		$connection = ftp_connect($_REQUEST["ftpServer"]);
-	
-		$login = ftp_login($connection, $_REQUEST["ftpUser"], $_REQUEST["ftpPass"]);
-		
-		ftp_chdir($connection, $_REQUEST["ftpPath"]); 
-		
-		recDownload(dirname(__FILE__), "./", $connection);
-				
-		ftp_close($connection);
-		
-		echo "Shopdaten übertragen, räume auf<br />";
-		
-	}
-		
-	if($_REQUEST["spaceStep"] == 5) {	
-		
-		rrmdir(dirname(__FILE__)."/tmp");
-		mkdir(dirname(__FILE__)."/tmp", 0777);
-		//mod config
-		
-		chmodRec(dirname(__FILE__)."/export/", 0777, 0777);
-		
-		chmod(dirname(__FILE__).'/.htaccess', 0777);
-		chmod(dirname(__FILE__)."/config.inc.php", 0777);
-		
-		chmodRec(dirname(__FILE__)."/log/", 0777, 0777);
-		chmodRec(dirname(__FILE__)."/out/", 0777, 0777);
-		
-		$config = file_get_contents(dirname(__FILE__)."/config.inc.php");
-				
-		$config = preg_replace('#this\-\>dbHost \= \'(.*)\'\;#i', "this->dbHost = '".$_REQUEST["host"]."';", $config);
-		$config = preg_replace('#this\-\>dbName \= \'(.*)\'\;#i', "this->dbName = '".$_REQUEST["name"]."';", $config);
-		$config = preg_replace('#this\-\>dbUser \= \'(.*)\'\;#i', "this->dbUser = '".$_REQUEST["user"]."';", $config);
-		$config = preg_replace('#this\-\>dbPwd \= \'(.*)\'\;#i', "this->dbPwd = '".$_REQUEST["pass"]."';", $config);
+        mysql_select_db($_REQUEST["name"], $link);
+        
+        mysql_query('UPDATE oxuser SET OXPASSWORD = "'.$hash.'", OXPASSSALT = "'.$salt.'" WHERE OXID = "oxdefaultadmin"');
+        
+        mysql_close();
+        
+        echo "======= Admin Daten =======<br />" ;
+        echo "User: admin <br/>";
+        echo "Passwort: ".$newPass."<br />";
+        echo "===========================<br />";
+        
+        echo "Setup abgeschlossen!<br />";
+        echo 'OXID wurde installiert, <a href="http://'.$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"]).'" target="_blank">hier klicken</a> um zum Shop zu gelangen<br />';
+    }
+    
+    if ($_REQUEST["spaceStep"] == 1) {
+        echo "Drohne wird gestartet ...<br />";
+        echo "Erstelle Dump der remote DB <br />";
+    }
+    
+    if ($_REQUEST["spaceStep"] == 2) {
+        $sputnikDrone = launchSputnik();
+        
+        $connection = ftp_connect($_REQUEST["ftpServer"]);
+    
+        $login = ftp_login($connection, $_REQUEST["ftpUser"], $_REQUEST["ftpPass"]);
+    
+        if (!$connection || !$login) {
+            unlink(dirname(__FILE)."/".$sputnikDrone);
+            die('Sputnik! konnte sich nicht zum FTP Host verbinden!<br />');
+        }
+        
+        ftp_pasv($connection, true);
+    
+        $upload = ftp_put($connection, $_REQUEST["ftpPath"]."/".$sputnikDrone, dirname(__FILE__)."/".$sputnikDrone, FTP_BINARY);
+    
+        unlink(dirname(__FILE__)."/".$sputnikDrone);
+    
+        if (!$upload) {
+            die('FTP upload Fehler!<br />');
+        }
+        
+        file_get_contents($_REQUEST["shopUrl"]."/".$sputnikDrone);
+        
+        ftp_delete($connection, $_REQUEST["ftpPath"]."/".$sputnikDrone);
+                
+        echo "MySQL dump ausgeführt, importiere Datenbank ...<br />";
+    }
+    
+    if ($_REQUEST["spaceStep"] == 3) {
+        $timestamp = time();
+        
+        $connection = ftp_connect($_REQUEST["ftpServer"]);
+    
+        $login = ftp_login($connection, $_REQUEST["ftpUser"], $_REQUEST["ftpPass"]);
+        
+        $remoteFile = $_REQUEST["ftpPath"]."/tmp/backup-".date('dmY', $timestamp).".sql";
+        
+        ftp_get($connection, dirname(__FILE__)."/backup-".date('dmY', $timestamp).".sql", $remoteFile, FTP_BINARY);
+        
+        ftp_delete($connection, $remoteFile);
+        
+        ftp_close($connection);
+        
+        importDb($_REQUEST["user"], $_REQUEST["pass"], $_REQUEST["host"], $_REQUEST["name"], dirname(__FILE__)."/backup-".date('dmY', $timestamp).".sql");
+        
+        unlink(dirname(__FILE__)."/backup-".date('dmY', $timestamp).".sql");
+    
+        echo "Hole Shopdaten vom Remote Server<br />";
+    }
+    
+    if ($_REQUEST["spaceStep"] == 4) {
+        $connection = ftp_connect($_REQUEST["ftpServer"]);
+    
+        $login = ftp_login($connection, $_REQUEST["ftpUser"], $_REQUEST["ftpPass"]);
+        
+        ftp_chdir($connection, $_REQUEST["ftpPath"]);
+        
+        recDownload(dirname(__FILE__), "./", $connection);
+                
+        ftp_close($connection);
+        
+        echo "Shopdaten übertragen, räume auf<br />";
+    }
+        
+    if ($_REQUEST["spaceStep"] == 5) {
+        rrmdir(dirname(__FILE__)."/tmp");
+        mkdir(dirname(__FILE__)."/tmp", 0777);
+        //mod config
+        
+        chmodRec(dirname(__FILE__)."/export/", 0777, 0777);
+        
+        chmod(dirname(__FILE__).'/.htaccess', 0777);
+        chmod(dirname(__FILE__)."/config.inc.php", 0777);
+        
+        chmodRec(dirname(__FILE__)."/log/", 0777, 0777);
+        chmodRec(dirname(__FILE__)."/out/", 0777, 0777);
+        
+        $config = file_get_contents(dirname(__FILE__)."/config.inc.php");
+                
+        $config = preg_replace('#this\-\>dbHost \= \'(.*)\'\;#i', "this->dbHost = '".$_REQUEST["host"]."';", $config);
+        $config = preg_replace('#this\-\>dbName \= \'(.*)\'\;#i', "this->dbName = '".$_REQUEST["name"]."';", $config);
+        $config = preg_replace('#this\-\>dbUser \= \'(.*)\'\;#i', "this->dbUser = '".$_REQUEST["user"]."';", $config);
+        $config = preg_replace('#this\-\>dbPwd \= \'(.*)\'\;#i', "this->dbPwd = '".$_REQUEST["pass"]."';", $config);
 
-		$config = preg_replace('#this\-\>sShopURL \= \'(.*)\'\;#i', "this->sShopURL = 'http://".$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"])."';", $config);
-		$config = preg_replace('#this\-\>sSSLShopURL \= \'(.*)\'\;#i', "this->sSSLShopURL = null;", $config);
-		$config = preg_replace('#this\-\>sAdminSSLURL \= \'(.*)\'\;#i', "this->sAdminSSLURL = null;", $config);
+        $config = preg_replace('#this\-\>sShopURL \= \'(.*)\'\;#i', "this->sShopURL = 'http://".$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"])."';", $config);
+        $config = preg_replace('#this\-\>sSSLShopURL \= \'(.*)\'\;#i', "this->sSSLShopURL = null;", $config);
+        $config = preg_replace('#this\-\>sAdminSSLURL \= \'(.*)\'\;#i', "this->sAdminSSLURL = null;", $config);
 
-		$config = preg_replace('#this\-\>sShopDir \= \'(.*)\'\;#i', "this->sShopDir = '".dirname(__FILE__)."';", $config);
-		$config = preg_replace('#this\-\>sCompileDir \= \'(.*)\'\;#i', "this->sCompileDir = '".dirname(__FILE__)."/tmp';", $config);
+        $config = preg_replace('#this\-\>sShopDir \= \'(.*)\'\;#i', "this->sShopDir = '".dirname(__FILE__)."';", $config);
+        $config = preg_replace('#this\-\>sCompileDir \= \'(.*)\'\;#i', "this->sCompileDir = '".dirname(__FILE__)."/tmp';", $config);
 
-		file_put_contents(dirname(__FILE__)."/config.inc.php", $config);
-		
-		echo "Dateirechte wurden gesetzt, die Config Datei wurde bearbeitet<br />";
-		
-		echo 'OXID Shop erfolgreich kopiert, <a href="http://'.$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"]).'/admin/" target="_blank">hier klicken</a> um zum Shop zu gelangen<br />';
-		echo "Bitte loggen Sie sich ein und updaten Sie die Views<br />";
-				
-	}
-	
-	exit(1);
+        file_put_contents(dirname(__FILE__)."/config.inc.php", $config);
+        
+        echo "Dateirechte wurden gesetzt, die Config Datei wurde bearbeitet<br />";
+        
+        echo 'OXID Shop erfolgreich kopiert, <a href="http://'.$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"]).'/admin/" target="_blank">hier klicken</a> um zum Shop zu gelangen<br />';
+        echo "Bitte loggen Sie sich ein und updaten Sie die Views<br />";
+    }
+    
+    exit(1);
 }
 
 $starImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADUAAAA3CAYAAACsLgJ7AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyRpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYxIDY0LjE0MDk0OSwgMjAxMC8xMi8wNy0xMDo1NzowMSAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNS4xIE1hY2ludG9zaCIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo2Q0MxQkY5Rjk2RkYxMUUyOTdDOEFEQkYyOUYxRkFDNyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDo2Q0MxQkZBMDk2RkYxMUUyOTdDOEFEQkYyOUYxRkFDNyI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOjZDQzFCRjlEOTZGRjExRTI5N0M4QURCRjI5RjFGQUM3IiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjZDQzFCRjlFOTZGRjExRTI5N0M4QURCRjI5RjFGQUM3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+dwV+NQAAAwBJREFUeNrcmk9IVFEUxq8pwoAyIRhCMBAEyoAgDLiTYmDaBC7ENrYJBoJWgRAErlq1mjbJRGAUgW4CQTFaCYIRCIrCgBgMSlEkSUEYSaFM37Hz4PXwzft3Zu69c+DHG59v7rzv3fvOPffco2pKKY20g8egU7JdnYJIyCyogZxk2+eUHkuBV2CC/x6SbFyHqC6wBEZd53Kiv9DkIdcD3vGQc7Nm6zvVBzbPEET8YqdhlagM2PER5DBok6O4DFZBf8B1OVscxSALyoS4dsgGUcNgBfSFvD4n6f16QV54ArwCDgPeIS+HUs6ijRrCcYfHPtl3sMfQ5w3wA1Rd5+rZdZ5YUzGe8QB4n7Sj2mr/jkUwE+F7WyyUbuAjOAAVkAVl0Bnzfm6COanJl+KwTxGHSyMoSbr0P+CR0m8iHtAZfk5Mtgt6NYqiIX1e0qX/BNOaeyrtclhi89Q0i7N6CHpFkbt+olnUbXBReulB0fRvzV6QovaHIC0ZpZcNcO/EN3A3ag7D7x+XwLEhwohdMCGxnpo1SJTDOseVsUVlDRTl8KbeojKoK+cNFkbM8Ko6kqhhw0Wd6SnDvHjLFgj7z1N2hJjKXoC8Mt96QOl02ROipxYs6akldm6BgrIWiNn0uvkgUc8NFvMBFKO69IwBMaBfgmYKpOLMUyXDxFDY9pQD7lgRRTpGiqvREUQ2aew3ZZATKEgsPWisftUs5oufE4gr6o5mQTQvdknuelC2dlJzZLCYNE/iFTUukc1JaBXJvB/Zuvj+azQ7Ad3gSKqnCpoFKc7NHyVtxC3qngGR9pZEIx2uBGIh4hPd52OVP29zyvplgtS1qKj7nvN0k5/5Rw54X2qbz1cD2hwByzETkiKinE23W3zD+7zJltQyLCyqJ73AD9HY4pB6dRN+UYTxJQfU61fB22YOvWaUHNB+0zXwupVEKZ53xkLs5YqJanbBVb2Nh36bixgfNLKGQmdl5mSrlMZ5Kbq2i8qtUG5K9gzc4HKHimTD3qWHDsvzXrOY9/srwABkSDcyh+P0ugAAAABJRU5ErkJggg=="
@@ -719,11 +650,11 @@ body {
 }
 a {
 	color:#FF0000;
-	text-decoration:none;	
+	text-decoration:none;
 }
 #head {
 	font-family: 'Economica', sans-serif;
-	font-size:90px;	
+	font-size:90px;
 	margin:0;
 	font-weight:bold;
 	margin-bottom:30px;
@@ -742,7 +673,7 @@ input[type='password'] {
 }
 #result {
 	height: 425px;
-	overflow:auto;	
+	overflow:auto;
 	border: 1px solid #CCC;
 	margin-left:420px;
 	margin-right:30px;
@@ -762,7 +693,7 @@ input[type='password'] {
 }
 #tab1 {
 	position: relative;
-	left: 0;	
+	left: 0;
 }
 #tab2 {
 	position: relative;
@@ -770,7 +701,7 @@ input[type='password'] {
 	display:none;
 }
 #tabhead {
-	clear:both;	
+	clear:both;
 }
 #copyright {
 	font-size:10px;
@@ -787,11 +718,11 @@ input[type='password'] {
 	function switchTab(tab) {
 		if(tab == 1) {
 			$("#tab1").hide();
-			$("#tab2").show();	
+			$("#tab2").show();
 		}
 		if(tab == 0) {
 			$("#tab2").hide();
-			$("#tab1").show();	
+			$("#tab1").show();
 		}
 	}
 
@@ -805,9 +736,9 @@ input[type='password'] {
 			var ftpUser 	= $("#ftpUser").val();
 			var ftpPass 	= $("#ftpPass").val();
 			var ftpPath 	= $("#ftpPath").val();
-			var shopUrl 	= $("#shopUrl").val();					
+			var shopUrl 	= $("#shopUrl").val();
 		
-			$.post("<?php $_SERVER['SCRIPT_NAME'] ?>", {	
+			$.post("<?php $_SERVER['SCRIPT_NAME'] ?>", {
 					'ajax'	   			: 	'1',
 					'spaceStep'			:	step,
 					'host'				:	host,
@@ -836,7 +767,7 @@ input[type='password'] {
 			var name = $("#name").val();
 			var pass = $("#pass").val();
 		
-			$.post("<?php $_SERVER['SCRIPT_NAME'] ?>", {	
+			$.post("<?php $_SERVER['SCRIPT_NAME'] ?>", {
 					'ajax'	   			: 	'1',
 					'installStep'		:	step,
 					'host'				:	host,
@@ -869,8 +800,8 @@ input[type='password'] {
 		$("#ftpServer").prop('disabled', true);
 		$("#ftpUser").prop('disabled', true);
 		$("#ftpPass").prop('disabled', true);
-		$("#ftpPath").prop('disabled', true);					
-		$("#shopUrl").prop('disabled', true);	
+		$("#ftpPath").prop('disabled', true);
+		$("#shopUrl").prop('disabled', true);
 		
 		if(isShown == 0) {
 			isShown = 1;
@@ -892,15 +823,15 @@ input[type='password'] {
 		$("#ftpServer").prop('disabled', true);
 		$("#ftpUser").prop('disabled', true);
 		$("#ftpPass").prop('disabled', true);
-		$("#ftpPath").prop('disabled', true);					
-		$("#shopUrl").prop('disabled', true);					
+		$("#ftpPath").prop('disabled', true);
+		$("#shopUrl").prop('disabled', true);
 		
 		if(isShown == 0) {
 			isShown = 1;
 			$("#result").slideToggle('slow');
 			clone(1);
-		} 
-	}	
+		}
+	}
 	
 	function generateNoise(opacity) {
 		
@@ -932,9 +863,9 @@ input[type='password'] {
 	function goAnimate() {
 		
 		if(endAnim == 1) {
-			noise = noise - 0.01;	
+			noise = noise - 0.01;
 		} else {
-			noise == Math.floor((Math.random()*10)+1)/10;	
+			noise == Math.floor((Math.random()*10)+1)/10;
 		}
 		
 		if(noise > 0) {
@@ -942,7 +873,7 @@ input[type='password'] {
 			if(endAnim == 1) {
 				setTimeout(function() {
 					goAnimate();
-				},50);	
+				},50);
 			}
 		}
 	}
@@ -955,8 +886,8 @@ input[type='password'] {
 <body>
 <div id="frame">
 <div id="main">
-<div id="head"><img alt="" src="<? echo $starImage; ?>" /> Sputnik! <img alt="" src="<? echo $starImage; ?>" />
-<span id="slogan"><center>"The only good is knowledge and the only evil is ignorance."<br /><i>Socrates (469 BC - 399 BC)</i></center></span> 
+<div id="head"><img alt="" src="<?php echo $starImage; ?>" /> Sputnik! <img alt="" src="<?php echo $starImage; ?>" />
+<span id="slogan"><center>"The only good is knowledge and the only evil is ignorance."<br /><i>Socrates (469 BC - 399 BC)</i></center></span>
 </div>
 <div id="tabhead"><a href="#" onclick="javascript:switchTab(0);">Datenbank</a> | <a href="#" onclick="javascript:switchTab(1);">FTP</a></div>
 <div id="tab1">
