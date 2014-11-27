@@ -36,6 +36,10 @@
 //mark
 
 //init
+/*
+ * Rename this file and set the $firstStart option
+ * Redirect to the new file
+ */
 if (!isset($firstStart)) {
     $sputnikFileName = md5(microtime());
 
@@ -77,202 +81,361 @@ class confStub
     }
 }
 
-function aesEncrypt($sValue, $sSecretKey)
+/**
+ * Collection of all methods according to the encryption
+ */
+class crypt
 {
-    if ($useAES == false) {
-        return $sValue;
+    public $useAES = true;
+    
+    /**
+     * Encrypt the given content if defined
+     *
+     * @param type $sValue
+     * @param type $sSecretKey
+     * @return type
+     */
+    public function aesEncrypt($sValue, $sSecretKey)
+    {
+        if ($this->useAES == false) {
+            return $sValue;
+        }
+
+        return trim(
+            base64_encode(
+                mcrypt_encrypt(
+                    MCRYPT_RIJNDAEL_256,
+                    $sSecretKey, $sValue,
+                    MCRYPT_MODE_ECB,
+                    mcrypt_create_iv(
+                        mcrypt_get_iv_size(
+                            MCRYPT_RIJNDAEL_256,
+                            MCRYPT_MODE_ECB
+                        ),
+                        MCRYPT_RAND)
+                    )
+                )
+            );
     }
     
-    return trim(
-        base64_encode(
-            mcrypt_encrypt(
+    /**
+     * Decrypt the given content
+     * @param type $sValue
+     * @param type $sSecretKey
+     * @return type
+     */
+    public function aesDecrypt($sValue, $sSecretKey)
+    {
+        if ($this->useAES == false) {
+            return $sValue;
+        }
+
+        echo "Entschlüssele Backup<br />";
+
+        return trim(
+            mcrypt_decrypt(
                 MCRYPT_RIJNDAEL_256,
-                $sSecretKey, $sValue,
+                $sSecretKey,
+                base64_decode($sValue),
                 MCRYPT_MODE_ECB,
                 mcrypt_create_iv(
                     mcrypt_get_iv_size(
                         MCRYPT_RIJNDAEL_256,
                         MCRYPT_MODE_ECB
                     ),
-                    MCRYPT_RAND)
+                    MCRYPT_RAND
                 )
             )
         );
+    }
 }
 
-function backupTables($host, $user, $pass, $name, $tables = '*')
+
+class database
 {
-    $link = mysql_connect($host, $user, $pass);
-      
-    mysql_select_db($name, $link);
-  
-    if ($tables == '*') {
-        $tables = array();
-        $result = mysql_query('SHOW TABLES');
-        while ($row = mysql_fetch_row($result)) {
-            $tables[] = $row[0];
-        }
-    } else {
-        $tables = is_array($tables) ? $tables : explode(',', $tables);
-    }
-  
-    $aViews    = array();
-    $aTables    = array();
-  
-    foreach ($tables as $sTable) {
-        if (strpos($sTable, 'oxv_') !== false) {
-            array_push($aViews, $sTable);
-        } else {
-            array_push($aTables, $sTable);
-        }
-    }
- 
-    $aNewTables = array_merge($aTables, $aViews);
-  
-    foreach ($aNewTables as $table) {
-        $result = mysql_query('SELECT * FROM '.$table);
-    
-        $num_fields = mysql_num_fields($result);
-    
-        $return.= 'DROP TABLE '.$table.';';
-    
-        $row2 = mysql_fetch_row(mysql_query('SHOW CREATE TABLE '.$table));
-    
-        $return.= "\n\n".$row2[1].";\n\n";
-    
-        for ($i = 0; $i < $num_fields; $i++) {
+    public function backupTables($host, $user, $pass, $name, $tables = '*')
+    {
+        $link = mysql_connect($host, $user, $pass);
+
+        mysql_select_db($name, $link);
+
+        if ($tables == '*') {
+            $tables = array();
+            $result = mysql_query('SHOW TABLES');
             while ($row = mysql_fetch_row($result)) {
-                $return.= 'INSERT INTO '.$table.' VALUES(';
-        
-                for ($j=0; $j<$num_fields; $j++) {
-                    $row[$j] = mysql_real_escape_string($row[$j]);
-              
-                    if (isset($row[$j])) {
-                        $return.= '"'.$row[$j].'"' ;
-                    } else {
-                        $return.= '""';
-                    }
-        
-                    if ($j<($num_fields-1)) {
-                        $return.= ',';
-                    }
-                }
-                $return .= ");\n";
+                $tables[] = $row[0];
+            }
+        } else {
+            $tables = is_array($tables) ? $tables : explode(',', $tables);
+        }
+
+        $aViews    = array();
+        $aTables    = array();
+
+        foreach ($tables as $sTable) {
+            if (strpos($sTable, 'oxv_') !== false) {
+                array_push($aViews, $sTable);
+            } else {
+                array_push($aTables, $sTable);
             }
         }
-        $return .= "\n\n\n";
+
+        $aNewTables = array_merge($aTables, $aViews);
+
+        foreach ($aNewTables as $table) {
+            $result = mysql_query('SELECT * FROM '.$table);
+
+            $num_fields = mysql_num_fields($result);
+
+            $return.= 'DROP TABLE '.$table.';';
+
+            $row2 = mysql_fetch_row(mysql_query('SHOW CREATE TABLE '.$table));
+
+            $return.= "\n\n".$row2[1].";\n\n";
+
+            for ($i = 0; $i < $num_fields; $i++) {
+                while ($row = mysql_fetch_row($result)) {
+                    $return.= 'INSERT INTO '.$table.' VALUES(';
+
+                    for ($j=0; $j<$num_fields; $j++) {
+                        $row[$j] = mysql_real_escape_string($row[$j]);
+
+                        if (isset($row[$j])) {
+                            $return.= '"'.$row[$j].'"' ;
+                        } else {
+                            $return.= '""';
+                        }
+
+                        if ($j<($num_fields-1)) {
+                            $return.= ',';
+                        }
+                    }
+                    $return .= ");\n";
+                }
+            }
+            $return .= "\n\n\n";
+        }
+
+        $timestamp = time();
+
+        file_put_contents(dirname(__FILE__)."/tmp/backup-".date('dmY', $timestamp).".sql", aesEncrypt($return, $sKey));
     }
-  
-    $timestamp = time();
+    
+    /**
+     * Prepare the data from the config.inc.php and call the export
+     * @param void
+     * @return void
+     */
+    public function dumpLocalDb()
+    {
+        $oStub = new confStub;
+    
+        $user    = $oStub->dbUser;
+        $pass    = $oStub->dbPwd;
+        $host    = $oStub->dbHost;
+        $name    = $oStub->dbName;
+    
+        $this->backupTables($host, $user, $pass, $name);
+    }
+    
+    public function importDb($user, $pass, $host, $name, $file)
+    {
+        $connection = mysql_connect($host, $user, $pass) or die("Verbindungsversuch zur lokalen Datenbank fehlgeschlagen<br />");
 
-    file_put_contents(dirname(__FILE__)."/tmp/backup-".date('dmY', $timestamp).".sql", aesEncrypt($return, $sKey));
+        mysql_select_db($name, $connection) or die("Konnte die lokale Datenbank nicht selektieren<br />");
+
+        $import = null;
+
+        if ($useAES == false) {
+            $import = aesDecrypt(file_get_contents($file), $sKey);
+        } else {
+            $import = file_get_contents($file);
+        }
+
+        $import = preg_replace("%/\*(.*)\*/%Us", '', $import);
+        $import = preg_replace("%^--(.*)\n%mU", '', $import);
+        $import = preg_replace("%^$\n%mU", '', $import);
+
+        mysql_real_escape_string($import);
+
+        $import = explode(";\n", $import);
+
+        foreach ($import as $imp) {
+            if ($imp != '' && $imp != ' ') {
+                $result = mysql_query($imp.";");
+
+                if (!$result) {
+                    echo mysql_error()."<br />";
+                }
+            }
+        }
+    }
 }
 
-function dumpLocalDb()
-{
-    $oStub = new confStub;
-    
-    $user    = $oStub->dbUser;
-    $pass    = $oStub->dbPwd;
-    $host    = $oStub->dbHost;
-    $name    = $oStub->dbName;
-    
-    backupTables($host, $user, $pass, $name);
-}
 
 //sputnik end
 
-function recDownload($localDir, $remoteDir, $ftpConn)
+class filehandling
 {
-    if ($remoteDir != ".") {
-        if (ftp_chdir($ftpConn, $remoteDir) == false) {
-            echo("CD Fehler: ".$remoteDir."<br />\r\n");
-            exit(0);
-            return;
+    public function recDownload($localDir, $remoteDir, $ftpConn)
+    {
+        if ($remoteDir != ".") {
+            if (ftp_chdir($ftpConn, $remoteDir) == false) {
+                echo("CD Fehler: ".$remoteDir."<br />\r\n");
+                exit(0);
+                return;
+            }
+
+            if (!(is_dir($remoteDir))) {
+                mkdir($remoteDir);
+            }
+
+            chdir($remoteDir);
         }
-                        
-            
-        if (!(is_dir($remoteDir))) {
-            mkdir($remoteDir);
-        }
-        chdir($remoteDir);
-    }
- 
-    $contents = ftp_nlist($ftpConn, ".");
-    
-    foreach ($contents as $file) {
-        if ($file == '.' || $file == '..') {
-            continue;
-        }
-        if (@ftp_chdir($ftpConn, $file)) {
-            ftp_chdir($ftpConn, "..");
-            
-            recDownload($localDir, $file, $ftpConn);
-        } else {
-            ftp_get($ftpConn, "./".$file, $file, FTP_BINARY);
-        }
-    }
- 
-    ftp_chdir($ftpConn, "..");
-    
-    chdir("..");
-}
 
-function aesDecrypt($sValue, $sSecretKey)
-{
-    if ($useAES == false) {
-        return $sValue;
-    }
-    
-    echo "Entschlüssele Backup<br />";
-    
-    return trim(
-        mcrypt_decrypt(
-            MCRYPT_RIJNDAEL_256,
-            $sSecretKey,
-            base64_decode($sValue),
-            MCRYPT_MODE_ECB,
-            mcrypt_create_iv(
-                mcrypt_get_iv_size(
-                    MCRYPT_RIJNDAEL_256,
-                    MCRYPT_MODE_ECB
-                ),
-                MCRYPT_RAND
-            )
-        )
-    );
-}
+        $contents = ftp_nlist($ftpConn, ".");
 
-function importDb($user, $pass, $host, $name, $file)
-{
-    $connection = mysql_connect($host, $user, $pass) or die("Verbindungsversuch zur lokalen Datenbank fehlgeschlagen<br />");
+        foreach ($contents as $file) {
+            if ($file == '.' || $file == '..') {
+                continue;
+            }
 
-    mysql_select_db($name, $connection) or die("Konnte die lokale Datenbank nicht selektieren<br />");
-    
-    $import = null;
-
-    if ($useAES == false) {
-        $import = aesDecrypt(file_get_contents($file), $sKey);
-    } else {
-        $import = file_get_contents($file);
-    }
-    
-    $import = preg_replace("%/\*(.*)\*/%Us", '', $import);
-    $import = preg_replace("%^--(.*)\n%mU", '', $import);
-    $import = preg_replace("%^$\n%mU", '', $import);
-
-    mysql_real_escape_string($import);
-    
-    $import = explode(";\n", $import);
-
-    foreach ($import as $imp) {
-        if ($imp != '' && $imp != ' ') {
-            $result = mysql_query($imp.";");
-            
-            if (!$result) {
-                echo mysql_error()."<br />";
+            if (@ftp_chdir($ftpConn, $file)) {
+                ftp_chdir($ftpConn, "..");
+                recDownload($localDir, $file, $ftpConn);
+            } else {
+                ftp_get($ftpConn, "./".$file, $file, FTP_BINARY);
             }
         }
+
+        ftp_chdir($ftpConn, "..");
+
+        chdir("..");
+    }
+    
+    public function chmodRec($path, $filePerm=0644, $dirPerm=0755)
+    {
+        if (!file_exists($path)) {
+            return false;
+        }
+       
+        if (is_file($path)) {
+            chmod($path, $filePerm);
+        } elseif (is_dir($path)) {
+            $foldersAndFiles = scandir($path);
+            $entries = array_slice($foldersAndFiles, 2);
+            foreach ($entries as $entry) {
+                chmodRec($path."/".$entry, $filePerm, $dirPerm);
+            }
+            chmod($path, $dirPerm);
+        }
+        return true;
+    }
+
+    public function mkdirParents($d, $umask = 0777)
+    {
+        $dirs = array($d);
+        $d = dirname($d);
+        $last_dirname = '';
+
+        while ($last_dirname != $d) {
+            array_unshift($dirs, $d);
+            $last_dirname = $d;
+            $d = dirname($d);
+        }
+
+        foreach ($dirs as $dir) {
+            if (! file_exists($dir)) {
+                if (! mkdir($dir, $umask)) {
+                    echo("Can't make directory: ".$dir."<br />");
+                    return false;
+                }
+            } elseif (! is_dir($dir)) {
+                echo($dir." is not a directory<br />");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function unpackFile($file_name)
+    {
+        echo "Entpacke OXID Installation ... <br />";
+
+        $z = zip_open(dirname(__FILE__)."/".$file_name) or die("Fehler beim öffnen des Archiv: ".$file_name.": ".$php_errormsg);
+
+        while ($entry = zip_read($z)) {
+            $entry_name = zip_entry_name($entry);
+
+            $dir = dirname($entry_name);
+
+            if (!zip_entry_filesize($entry)) {
+                $dir = $entry_name;
+            }
+
+            if (!is_dir($dir)) {
+                mkdirParents($dir);
+            }
+
+            $file = basename($entry_name);
+
+            if (zip_entry_open($z, $entry)) {
+                if ($fh = fopen($dir.'/'.$file, 'w')) {
+                    fwrite($fh,    zip_entry_read($entry, zip_entry_filesize($entry)));
+                    fclose($fh);
+                }
+                zip_entry_close($entry);
+            }
+        }
+
+        return true;
+    }
+
+    public function rrmdir($dir)
+    {
+        if (is_dir($dir)) {
+            $objects = scandir($dir);
+
+            foreach ($objects as $object) {
+                if ($object != "." && $object != "..") {
+                    if (filetype($dir."/".$object) == "dir") {
+                        rrmdir($dir."/".$object);
+                    } else {
+                        unlink($dir."/".$object);
+                    }
+                }
+            }
+
+            reset($objects);
+            rmdir($dir);
+        }
+    }
+
+    public function downloadFile($url, $filename)
+    {
+        unlink(realpath(dirname(__FILE__)."/".$filename));
+
+        echo "Download der neusten OXID CE Version ... <br />";
+
+        $path = dirname(__FILE__)."/".$filename;
+
+        $timeout = 920;
+
+        $fp = fopen($path, 'w');
+
+        $ch = curl_init();
+
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
+        curl_setopt($ch, CURLOPT_FILE, $fp);
+
+        $data = curl_exec($ch);
+
+        curl_close($ch);
+        fclose($fp);
+
+        return $filename;
     }
 }
 
@@ -294,129 +457,6 @@ function launchSputnik()
     return $filename;
 }
 
-function chmodRec($path, $filePerm=0644, $dirPerm=0755)
-{
-    if (!file_exists($path)) {
-        return false;
-    }
-    if (is_file($path)) {
-        chmod($path, $filePerm);
-    } elseif (is_dir($path)) {
-        $foldersAndFiles = scandir($path);
-        $entries = array_slice($foldersAndFiles, 2);
-        foreach ($entries as $entry) {
-            chmodRec($path."/".$entry, $filePerm, $dirPerm);
-        }
-        chmod($path, $dirPerm);
-    }
-    return true;
-}
-   
-function mkdirParents($d, $umask = 0777)
-{
-    $dirs = array($d);
-    $d = dirname($d);
-    $last_dirname = '';
-    
-    while ($last_dirname != $d) {
-        array_unshift($dirs, $d);
-        $last_dirname = $d;
-        $d = dirname($d);
-    }
-
-    foreach ($dirs as $dir) {
-        if (! file_exists($dir)) {
-            if (! mkdir($dir, $umask)) {
-                echo("Can't make directory: ".$dir."<br />");
-                return false;
-            }
-        } elseif (! is_dir($dir)) {
-            echo($dir." is not a directory<br />");
-            return false;
-        }
-    }
-    
-    return true;
-}
-
-function unpackFile($file_name)
-{
-    echo "Entpacke OXID Installation ... <br />";
-    
-    $z = zip_open(dirname(__FILE__)."/".$file_name) or die("Fehler beim öffnen des Archiv: ".$file_name.": ".$php_errormsg);
-    
-    while ($entry = zip_read($z)) {
-        $entry_name = zip_entry_name($entry);
-                                
-        $dir = dirname($entry_name);
-        
-        if (!zip_entry_filesize($entry)) {
-            $dir = $entry_name;
-        }
-        
-        if (!is_dir($dir)) {
-            mkdirParents($dir);
-        }
-    
-        $file = basename($entry_name);
-    
-        if (zip_entry_open($z, $entry)) {
-            if ($fh = fopen($dir.'/'.$file, 'w')) {
-                fwrite($fh,    zip_entry_read($entry, zip_entry_filesize($entry)));
-                fclose($fh);
-            }
-            zip_entry_close($entry);
-        }
-    }
-    
-    return true;
-}
-
-function rrmdir($dir)
-{
-    if (is_dir($dir)) {
-        $objects = scandir($dir);
-
-        foreach ($objects as $object) {
-            if ($object != "." && $object != "..") {
-                if (filetype($dir."/".$object) == "dir") {
-                    rrmdir($dir."/".$object);
-                } else {
-                    unlink($dir."/".$object);
-                }
-            }
-        }
-
-        reset($objects);
-        rmdir($dir);
-    }
-}
-
-function downloadFile($url, $filename)
-{
-    unlink(realpath(dirname(__FILE__)."/".$filename));
-    
-    echo "Download der neusten OXID CE Version ... <br />";
-    
-    $path = dirname(__FILE__)."/".$filename;
-    
-    $timeout = 920;
-    
-    $fp = fopen($path, 'w');
-    
-    $ch = curl_init();
-    
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
-    curl_setopt($ch, CURLOPT_FILE, $fp);
-    
-    $data = curl_exec($ch);
-    
-    curl_close($ch);
-    fclose($fp);
-
-    return $filename;
-}
 
 function hexToStr($hex)
 {
@@ -712,9 +752,6 @@ input[type='password'] {
 </style>
 <script language="javascript">
 
-	var noise = .9;
-	var endAnim = 0;
-	
 	function switchTab(tab) {
 		if(tab == 1) {
 			$("#tab1").hide();
@@ -831,56 +868,7 @@ input[type='password'] {
 			$("#result").slideToggle('slow');
 			clone(1);
 		}
-	}
-	
-	function generateNoise(opacity) {
-		
-	   if ( !!!document.createElement('canvas').getContext ) {
-		  return false;
-	   }
-	
-	   var canvas = document.createElement("canvas"),
-	   ctx = canvas.getContext('2d'),
-	   x, y,
-	   number,
-	   opacity = opacity || .2;
-	
-	   canvas.width = 25;
-	   canvas.height = 25;
-	
-	   for ( x = 0; x < canvas.width; x++ ) {
-		  for ( y = 0; y < canvas.height; y++ ) {
-			 number = Math.floor( Math.random() * 30 );
-	
-			 ctx.fillStyle = "rgba(" + number + "," + number + "," + number + "," + opacity + ")";
-			 ctx.fillRect(x, y, 1, 1);
-		  }
-	   }
-	
-	   document.body.style.backgroundImage = "url(" + canvas.toDataURL("image/png") + ")";
-	}
-	
-	function goAnimate() {
-		
-		if(endAnim == 1) {
-			noise = noise - 0.01;
-		} else {
-			noise == Math.floor((Math.random()*10)+1)/10;
-		}
-		
-		if(noise > 0) {
-			generateNoise(noise);
-			if(endAnim == 1) {
-				setTimeout(function() {
-					goAnimate();
-				},50);
-			}
-		}
-	}
-	
-	$(function() {
-		goAnimate();
-	});
+        }
 </script>
 </head>
 <body>
