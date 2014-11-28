@@ -59,7 +59,9 @@ class config
             
     public function __construct()
     {
-        require(dirname(__FILE__)."/config.inc.php");
+        if(file_exists(dirname(__FILE__)."/config.inc.php")){
+            require(dirname(__FILE__)."/config.inc.php");
+        }
     }
     
     public function getRequestParameter($name)
