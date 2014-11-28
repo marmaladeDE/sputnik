@@ -55,8 +55,6 @@ class config
     // AES Schlüssel
     public $sKey = null;
     
-    public $useAES = true;
-            
     public function __construct()
     {
         if(file_exists(dirname(__FILE__)."/config.inc.php")){
@@ -80,75 +78,6 @@ class config
         }
         
         return stripslashes(htmlentities($_SERVER[$name]));
-    }
-}
-
-/**
- * Collection of all methods according to the encryption
- */
-class crypt
-{
-    public $useAES = true;
-    
-    /**
-     * Encrypt the given content if defined
-     *
-     * @param type $sValue
-     * @param type $sSecretKey
-     * @return type
-     */
-    public function aesEncrypt($sValue, $sSecretKey)
-    {
-        if ($this->useAES == false) {
-            return $sValue;
-        }
-
-        return trim(
-            base64_encode(
-                mcrypt_encrypt(
-                    MCRYPT_RIJNDAEL_256,
-                    $sSecretKey, $sValue,
-                    MCRYPT_MODE_ECB,
-                    mcrypt_create_iv(
-                        mcrypt_get_iv_size(
-                            MCRYPT_RIJNDAEL_256,
-                            MCRYPT_MODE_ECB
-                        ),
-                        MCRYPT_RAND)
-                    )
-                )
-            );
-    }
-    
-    /**
-     * Decrypt the given content
-     * @param type $sValue
-     * @param type $sSecretKey
-     * @return type
-     */
-    public function aesDecrypt($sValue, $sSecretKey)
-    {
-        if ($this->useAES == false) {
-            return $sValue;
-        }
-
-        echo "Entschlüssele Backup<br />";
-
-        return trim(
-            mcrypt_decrypt(
-                MCRYPT_RIJNDAEL_256,
-                $sSecretKey,
-                base64_decode($sValue),
-                MCRYPT_MODE_ECB,
-                mcrypt_create_iv(
-                    mcrypt_get_iv_size(
-                        MCRYPT_RIJNDAEL_256,
-                        MCRYPT_MODE_ECB
-                    ),
-                    MCRYPT_RAND
-                )
-            )
-        );
     }
 }
 
