@@ -1,5 +1,5 @@
 <?php
-/*
+/** 
 
     Sputnik! Swiss Army Knife for OXID eShop
     ====================================================
@@ -9,7 +9,7 @@
     
     LICENSE
     
-    Copyright (c) 2012 -2013 by Alexander Pick (ap@pbt-media.com)
+    Copyright (c) 2012 - 2013 by Alexander Pick (ap@pbt-media.com)
 
     Permission is hereby granted, free of charge, to any person obtaining a copy of this
     software and associated documentation files (the "Software"), to deal in the Software
@@ -30,8 +30,14 @@
     More on Sputnik! at https://www.pbt-media.com
     
     ====================================================
-
-*/
+ * 
+ * This version is extended by marmalade for our use to clone a complete version
+ * of a live system into a stage or dev system.
+ * 
+ * @author Alexander Pick <ap@pbt-media.com>
+ * @author Joscha Krug <support@marmalade.de>
+ * 
+ */
 
 //mark
 
@@ -46,6 +52,9 @@ set_time_limit(0);
 header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
 header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Datum in der Vergangenheit
 
+/**
+ * Small class to import the config.inc.php settings
+ */
 class confStub
 {
     public function __construct()
@@ -123,7 +132,9 @@ class crypt
     }
 }
 
-
+/**
+ * Everything you need for database operations
+ */
 class database
 {
     public function backupTables($host, $user, $pass, $name, $tables = '*')
