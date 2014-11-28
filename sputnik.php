@@ -150,16 +150,23 @@ class database
 class filehandling
 {
     /**
-     *
+     * @param bool $excludeAllPictures Exclude the Pictures from the Backup
      * @param object $config
      */
-    public function writeBackupShellscript(config $config)
+    public function writeBackupShellscript(config $config, $excludeAllPictures = false)
     {
         $filename = 'backup_' . $config->sKey . '.sh';
         
         $content  = "#!/bin/bash\n";
         $content .= "[mysqlpath]mysql [name] -u [user] -p[password] -e 'show tables where tables_in_[name] not like \"oxv\_%\"' | grep -v Tables_in | xargs [mysqlpath]mysqldump [name] -u [user] -p[password] > ../backup_[hash].sql\n";
-        $content .= "tar -czf ../backup_[hash].tar.gz . --exclude=out/pictures/generated/\n";
+        $content .= "tar -czf ../backup_[hash].tar.gz . --exclude=tmp/*";
+         
+        if($excludeAllPictures){
+            $content .= " --exclude=out/pictures/* \n";
+        }else{
+            $content .= " --exclude=out/pictures/generated/* \n";
+        }
+        
         $content .= "touch backup_finished_[hash].txt";
         
         $content = str_replace('[mysqlpath]', $config->mysqlPath, $content);
@@ -613,11 +620,12 @@ $filehandler = new filehandling();
  * Part for the drone
  */
 if ($_REQUEST['drone'] === 'activate') {
-    $res = $filehandler->writeBackupShellscript($config);
+    
+    $res = $filehandler->writeBackupShellscript($config, true);
     
     if ($res === false) {
         exit('Problems writing the file');
     }
     
-    exec('sh backup_.' . $config->sKey . '.sh > /dev/null 2>&1');
+    exec('sh backup_' . $config->sKey . '.sh > /dev/null 2>&1');
 }
