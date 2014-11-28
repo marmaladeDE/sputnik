@@ -387,9 +387,7 @@ h2,
 
 #result {
     border:solid 1px #ccc;
-    padding:1em;
-    margin-bottom:2em;
-    clear:both;
+    padding:0.2em;
     overflow:auto;
     max-height:10em;
 }
@@ -467,6 +465,7 @@ h2,
 <h1 id="head">
     Sputnik SSH - Make sure you have the right data.
 </h1>
+<div id="result"><pre></pre></div>
 <div id="tab1">
     <h2>Zielsystem</h2>
     <label for="host">Host:</label>
@@ -499,7 +498,6 @@ h2,
         </button>
     </p>
 </div>
-    <div id="result"><pre></pre></div>
 </div>
 <div id="copyright">
     Sputnik SSH for OXID by <a href="http://www.pbt-media.com" target="_blank">Alexander Pick</a> and <a href="http://www.marmalade.de/">marmalade</a>
