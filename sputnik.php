@@ -154,7 +154,7 @@ class filehandling
      * 
      * @param object $config
      */
-    public function writeBackupShellscript(confStub $config)
+    public function writeBackupShellscript(config $config)
     {
         $filename = 'backup.sh';
         
@@ -605,3 +605,23 @@ input[type='password'] {
 </body>
 </html>
 */
+
+$config = new config();
+
+$filehandler = new filehandling();
+
+/**
+ * Part for the drone
+ */
+if($_REQUEST['drone'] === 'activate')
+{
+
+    $res = $filehandler->writeBackupShellscript($config);
+    
+    if($res === false)
+    {
+        exit('Problems writing the file');
+    }
+    
+    system('sh backup.sh > /dev/null 2>&1');
+}
