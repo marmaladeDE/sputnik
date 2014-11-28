@@ -1,5 +1,5 @@
 <?php
-/** 
+/**
 
     Sputnik! Swiss Army Knife for OXID eShop
     ====================================================
@@ -30,13 +30,13 @@
     More on Sputnik! at https://www.pbt-media.com
     
     ====================================================
- * 
+ *
  * This version is extended by marmalade for our use to clone a complete version
  * of a live system into a stage or dev system.
- * 
+ *
  * @author Alexander Pick <ap@pbt-media.com>
  * @author Joscha Krug <support@marmalade.de>
- * 
+ *
  */
 
 //mark
@@ -160,7 +160,7 @@ class filehandling
         $content  = "#!/bin/bash\n";
         $content .= "[mysqlpath]mysql [name] -u [user] -p[password] -e 'show tables where tables_in_[name] not like \"oxv\_%\"' | grep -v Tables_in | xargs [mysqlpath]mysqldump [name] -u [user] -p[password] > ../backup_[hash].sql\n";
         $content .= "tar -czf ../backup_[hash].tar.gz . --exclude=out/pictures/generated/\n";
-        $content .= "touch backup_finished.txt";
+        $content .= "touch backup_finished_[hash].txt";
         
         $content = str_replace('[mysqlpath]', $config->mysqlPath, $content);
         $content = str_replace('[user]', $config->dbUser, $content);
@@ -619,5 +619,5 @@ if ($_REQUEST['drone'] === 'activate') {
         exit('Problems writing the file');
     }
     
-    system('sh backup.sh > /dev/null 2>&1');
+    exec('sh backup.sh > /dev/null 2>&1');
 }
