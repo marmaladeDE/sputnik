@@ -412,6 +412,8 @@ if ($config->getRequestParameter('drone') === 'activate') {
     }
     
     exec('sh backup_' . $config->sKey . '.sh > /dev/null 2>&1');
+    
+    exit(0);
 }
 
 header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
@@ -427,11 +429,37 @@ header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Datum in der Vergangenheit
 <style type="text/css">
 * {
     font-family: Arial, Helvetica, sans-serif;
+    font-size:0.98em;
+    color:#222;
+}
+label {
+    display:blokc;
+    float:left;
+    clear:both;
+    width:10em;
 }
 input[type='text'],
 input[type='password'] {
-    border: 1px solid #CCC;
-    width:180px;
+    border: 1px solid #ccc;
+    width:10em;
+    float:left;
+    margin-bottom:0.5em;
+}
+
+h2,
+#todo,
+#copyright {
+    clear:both;
+}
+
+#result {
+    border:solid 1px #ccc;
+    padding:1em;
+    margin-bottom:2em;
+}
+#copyright {
+    font-size:0.7em;
+    color:#444;
 }
 </style>
 <script language="javascript">
@@ -497,79 +525,58 @@ input[type='password'] {
 </script>
 </head>
 <body>
-<div id="frame">
 <div id="main">
-<div id="head"><img alt="" src="<?php echo $starImage; ?>" /> Sputnik! <img alt="" src="<?php echo $starImage; ?>" />
-<span id="slogan"><center>"The only good is knowledge and the only evil is ignorance."<br /><i>Socrates (469 BC - 399 BC)</i></center></span>
-</div>
-<div id="tabhead"><a href="#" onclick="javascript:switchTab(0);">Datenbank</a> | <a href="#" onclick="javascript:switchTab(1);">FTP</a></div>
+<h1 id="head">
+    Sputnik SSH - Make sure you have the right data.
+</h1>
 <div id="tab1">
-<table width="320" border="0" id="options">
-  <tr>
-    <td width="160"> Host:
-    </td>
-    <td><input name="host" type="text" id="host" value="localhost" /></td>
-  </tr>
-  <tr>
-    <td width="160">DBName:</td>
-    <td><input name="name" type="text" id="name" /></td>
-  </tr>
-  <tr>
-    <td width="160">DBUser:</td>
-    <td><input name="user" type="text" id="user" /></td>
-  </tr>
-  <tr>
-    <td width="160">DBPass:</td>
-    <td><input name="pass" type="password" id="pass" /></td>
-  </tr>
-  <tr>
-    <td>&nbsp;</td>
-    <td>&nbsp;</td>
-  </tr>
-</table>
+    <h2>Zielsystem</h2>
+    <label for="host">Host:</label>
+    <input name="host" type="text" id="host" value="localhost" />
+    <label for="name">DBName:</label>
+    <input name="name" type="text" id="name" />
+    <label for="user">DBUser:</label>
+    <input name="user" type="text" id="user" />
+    <label for="pass">DBPass:</label>
+    <input name="pass" type="password" id="pass" />
 </div>
 <div id="tab2">
-<table width="320" border="0">
-  <tr>
-    <td width="160"> FTP Host:</td>
-    <td><input name="ftpServer" type="text" id="ftpServer" value="localhost" /></td>
-  </tr>
-  <tr>
-    <td width="160">FTP Benutzer:</td>
-    <td><input name="ftpUser" type="text" id="ftpUser" /></td>
-  </tr>
-  <tr>
-    <td width="160">FTP Passwort:</td>
-    <td><input name="ftpPass" type="password" id="ftpPass" /></td>
-  </tr>
-  <tr>
-    <td width="160">FTP Pfad:</td>
-    <td><input name="ftpPath" type="text" id="ftpPath" value="/httpdocs/" /></td>
-  </tr>
-    <tr>
-    <td width="160">Shop URL:</td>
-    <td><input name="shopUrl" type="text" value="http://" id="shopUrl" /></td>
-  </tr>
-</table>
+    <h2>Quellsystem</h2>
+    <label for="ftpServer">FTP Host:</label>
+    <input name="ftpServer" type="text" id="ftpServer" value="localhost" />
+    <label for="ftpUser">FTP Benutzer:</label>
+    <input name="ftpUser" type="text" id="ftpUser" />
+    <label for="ftpPass">FTP Passwort:</label>
+    <input name="ftpPass" type="password" id="ftpPass" />
+    <label for="ftpPath">FTP Pfad:</label>
+    <input name="ftpPath" type="text" id="ftpPath" value="/httpdocs/" />
+    <label for="shopUrl">Shop URL:</label>
+    <input name="shopUrl" type="text" value="http://" id="shopUrl" />
 </div>
 <div id="todo">
 <p>Was möchten Sie tun?</p>
-<p><a href="#" onclick="javascript:startClone();">Shop auf aktuelles Hosting clonen</a></p>
-<form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
-<input type="hidden" name="cmd" value="_donations">
-<input type="hidden" name="business" value="webmaster@ttyseven.com">
-<input type="hidden" name="lc" value="DE">
-<input type="hidden" name="no_note" value="0">
-<input type="hidden" name="currency_code" value="EUR">
-<input type="hidden" name="bn" value="PP-DonationsBF:btn_donate_SM.gif:NonHostedGuest">
-<input type="image" src="https://www.paypalobjects.com/de_DE/DE/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="Jetzt einfach, schnell und sicher online bezahlen – mit PayPal.">
-<img alt="" border="0" src="https://www.paypalobjects.com/de_DE/i/scr/pixel.gif" width="1" height="1">
-</form>
-
-</div>
+    <p>
+        <button onclick="javascript:startClone();">
+            Shop auf aktuelles Hosting clonen
+        </button>
+    </p>
 </div>
 <div id="result"></div>
 </div>
-<div id="copyright">Sputnik! for OXID (c) 2012-2013 Alexander Pick (ap@pbt-media.com) - <a href="http://www.pbt-media.com" target="_blank">http://www.pbt-media.com</a></div>
+<div id="copyright">
+    Sputnik SSH for OXID by <a href="http://www.pbt-media.com" target="_blank">Alexander Pick</a> and <a href="http://www.marmalade.de/">marmalade</a>
+    <br>
+    <br>
+    <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
+        <input type="hidden" name="cmd" value="_donations">
+        <input type="hidden" name="business" value="webmaster@ttyseven.com">
+        <input type="hidden" name="lc" value="DE">
+        <input type="hidden" name="no_note" value="0">
+        <input type="hidden" name="currency_code" value="EUR">
+        <input type="hidden" name="bn" value="PP-DonationsBF:btn_donate_SM.gif:NonHostedGuest">
+        <input type="image" src="https://www.paypalobjects.com/de_DE/DE/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="Jetzt einfach, schnell und sicher online bezahlen – mit PayPal.">
+        <img alt="" border="0" src="https://www.paypalobjects.com/de_DE/i/scr/pixel.gif" width="1" height="1">
+    </form>
+</div>
 </body>
 </html>
