@@ -161,9 +161,9 @@ class filehandling
         $content .= "[mysqlpath]mysql [name] -u [user] -p[password] -e 'show tables where tables_in_[name] not like \"oxv\_%\"' | grep -v Tables_in | xargs [mysqlpath]mysqldump [name] -u [user] -p[password] > ../backup_[hash].sql\n";
         $content .= "tar -czf ../backup_[hash].tar.gz . --exclude=tmp/*";
          
-        if($excludeAllPictures){
+        if ($excludeAllPictures) {
             $content .= " --exclude=out/pictures/* \n";
-        }else{
+        } else {
             $content .= " --exclude=out/pictures/generated/* \n";
         }
         
@@ -240,26 +240,8 @@ function hexToStr($hex)
     return $string;
 }
 
-/*
- * Rename this file and set the $firstStart option
- * Redirect to the new file
-if (!isset($firstStart)) {
-    $sputnikFileName = md5(microtime());
-
-    $sputnik = file_get_contents(__FILE__);
-        
-    $sputnik = str_replace("<sputnik_key>", md5(rand().microtime()), $sputnik);
-    $sputnik = str_replace("//mark", '$firstStart = 1;', $sputnik);
-        
-    file_put_contents(dirname(__FILE__) ."/".$sputnikFileName.".php", $sputnik);
-
-    unlink(__FILE__);
-    
-    header("Location: http://".$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"])."/".$sputnikFileName.".php");
-    
-    exit(0);
-}
-
+/**
+ *
 if ($_REQUEST["ajax"] == 1) {
     if ($_REQUEST["randomize"] == 1) {
         echo md5(microtime());
@@ -617,10 +599,30 @@ $config = new config();
 $filehandler = new filehandling();
 
 /**
+ * Part for the initial start.
+ * Rename this file and set the key.
+ * Redirect to the new file.
+ */
+if ($config->sKey == '<sputnik_key>') {
+    $sputnikFileName = md5(microtime());
+
+    $sputnik = file_get_contents(__FILE__);
+        
+    $sputnik = str_replace("<sputnik_key>", md5(rand().microtime()), $sputnik);
+        
+    file_put_contents(dirname(__FILE__) ."/".$sputnikFileName.".php", $sputnik);
+
+    unlink(__FILE__);
+    
+    header("Location: http://".$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"])."/".$sputnikFileName.".php");
+    
+    exit(0);
+}
+
+/**
  * Part for the drone
  */
 if ($_REQUEST['drone'] === 'activate') {
-    
     $res = $filehandler->writeBackupShellscript($config, true);
     
     if ($res === false) {
