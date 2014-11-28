@@ -39,14 +39,9 @@
  *
  */
 
-//mark
-
 ini_set('max_execution_time', 0);
 ini_set('memory_limit', -1);
 set_time_limit(0);
-
-header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
-header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Datum in der Vergangenheit
 
 /**
  * Small class to import the config.inc.php settings
@@ -59,11 +54,21 @@ class config
     
     // AES Schlüssel
     public $sKey    = "<sputnik_key>";
+    
     public $useAES = true;
             
     public function __construct()
     {
         require(dirname(__FILE__)."/config.inc.php");
+    }
+    
+    public function getRequestParameter($name)
+    {
+        if (!isset($_REQUEST[$name])) {
+            return false;
+        }
+        
+        return stripslashes(htmlentities($_REQUEST[$name]));
     }
 }
 
@@ -594,6 +599,7 @@ input[type='password'] {
 </html>
 */
 
+
 $config = new config();
 
 $filehandler = new filehandling();
@@ -604,6 +610,7 @@ $filehandler = new filehandling();
  * Redirect to the new file.
  */
 if ($config->sKey == '<sputnik_key>') {
+    
     $sputnikFileName = md5(microtime());
 
     $sputnik = file_get_contents(__FILE__);
@@ -622,7 +629,7 @@ if ($config->sKey == '<sputnik_key>') {
 /**
  * Part for the drone
  */
-if ($_REQUEST['drone'] === 'activate') {
+if ($config->getRequestParameter('drone') === 'activate') {
     $res = $filehandler->writeBackupShellscript($config, true);
     
     if ($res === false) {
@@ -631,3 +638,6 @@ if ($_REQUEST['drone'] === 'activate') {
     
     exec('sh backup_' . $config->sKey . '.sh > /dev/null 2>&1');
 }
+
+header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
+header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Datum in der Vergangenheit
