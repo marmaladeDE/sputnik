@@ -155,7 +155,7 @@ class filehandling
      */
     public function writeBackupShellscript(config $config)
     {
-        $filename = 'backup.sh';
+        $filename = 'backup_' . $config->sKey . '.sh';
         
         $content  = "#!/bin/bash\n";
         $content .= "[mysqlpath]mysql [name] -u [user] -p[password] -e 'show tables where tables_in_[name] not like \"oxv\_%\"' | grep -v Tables_in | xargs [mysqlpath]mysqldump [name] -u [user] -p[password] > ../backup_[hash].sql\n";
@@ -619,5 +619,5 @@ if ($_REQUEST['drone'] === 'activate') {
         exit('Problems writing the file');
     }
     
-    exec('sh backup.sh > /dev/null 2>&1');
+    exec('sh backup_.' . $config->sKey . '.sh > /dev/null 2>&1');
 }
