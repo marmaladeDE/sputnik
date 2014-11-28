@@ -247,133 +247,6 @@ function launchSputnik()
     return $filename;
 }
 
-
-function hexToStr($hex)
-{
-    $string='';
-    for ($i=0; $i < strlen($hex)-1; $i+=2) {
-        $string .= chr(hexdec($hex[$i].$hex[$i+1]));
-    }
-    return $string;
-}
-
-/**
- *
-if ($_REQUEST["ajax"] == 1) {
-    if ($_REQUEST["randomize"] == 1) {
-        echo md5(microtime());
-    }
-    
-    if ($_REQUEST["spaceStep"] == 1) {
-        echo "Drohne wird gestartet ...<br />";
-        echo "Erstelle Dump der remote DB <br />";
-    }
-    
-    if ($_REQUEST["spaceStep"] == 2) {
-        $sputnikDrone = launchSputnik();
-        
-        $connection = ftp_connect($_REQUEST["ftpServer"]);
-    
-        $login = ftp_login($connection, $_REQUEST["ftpUser"], $_REQUEST["ftpPass"]);
-    
-        if (!$connection || !$login) {
-            unlink(dirname(__FILE)."/".$sputnikDrone);
-            die('Sputnik! konnte sich nicht zum FTP Host verbinden!<br />');
-        }
-        
-        ftp_pasv($connection, true);
-    
-        $upload = ftp_put($connection, $_REQUEST["ftpPath"]."/".$sputnikDrone, dirname(__FILE__)."/".$sputnikDrone, FTP_BINARY);
-    
-        unlink(dirname(__FILE__)."/".$sputnikDrone);
-    
-        if (!$upload) {
-            die('FTP upload Fehler!<br />');
-        }
-        
-        file_get_contents($_REQUEST["shopUrl"]."/".$sputnikDrone);
-        
-        ftp_delete($connection, $_REQUEST["ftpPath"]."/".$sputnikDrone);
-                
-        echo "MySQL dump ausgeführt, importiere Datenbank ...<br />";
-    }
-    
-    if ($_REQUEST["spaceStep"] == 3) {
-        $timestamp = time();
-        
-        $connection = ftp_connect($_REQUEST["ftpServer"]);
-    
-        $login = ftp_login($connection, $_REQUEST["ftpUser"], $_REQUEST["ftpPass"]);
-        
-        $remoteFile = $_REQUEST["ftpPath"]."/tmp/backup-".date('dmY', $timestamp).".sql";
-        
-        ftp_get($connection, dirname(__FILE__)."/backup-".date('dmY', $timestamp).".sql", $remoteFile, FTP_BINARY);
-        
-        ftp_delete($connection, $remoteFile);
-        
-        ftp_close($connection);
-        
-        importDb($_REQUEST["user"], $_REQUEST["pass"], $_REQUEST["host"], $_REQUEST["name"], dirname(__FILE__)."/backup-".date('dmY', $timestamp).".sql");
-        
-        unlink(dirname(__FILE__)."/backup-".date('dmY', $timestamp).".sql");
-    
-        echo "Hole Shopdaten vom Remote Server<br />";
-    }
-    
-    if ($_REQUEST["spaceStep"] == 4) {
-        $connection = ftp_connect($_REQUEST["ftpServer"]);
-    
-        $login = ftp_login($connection, $_REQUEST["ftpUser"], $_REQUEST["ftpPass"]);
-        
-        ftp_chdir($connection, $_REQUEST["ftpPath"]);
-        
-        recDownload(dirname(__FILE__), "./", $connection);
-                
-        ftp_close($connection);
-        
-        echo "Shopdaten übertragen, räume auf<br />";
-    }
-        
-    if ($_REQUEST["spaceStep"] == 5) {
-        rrmdir(dirname(__FILE__)."/tmp");
-        mkdir(dirname(__FILE__)."/tmp", 0777);
-        //mod config
-        
-        chmodRec(dirname(__FILE__)."/export/", 0777, 0777);
-        
-        chmod(dirname(__FILE__).'/.htaccess', 0777);
-        chmod(dirname(__FILE__)."/config.inc.php", 0777);
-        
-        chmodRec(dirname(__FILE__)."/log/", 0777, 0777);
-        chmodRec(dirname(__FILE__)."/out/", 0777, 0777);
-        
-        $config = file_get_contents(dirname(__FILE__)."/config.inc.php");
-                
-        $config = preg_replace('#this\-\>dbHost \= \'(.*)\'\;#i', "this->dbHost = '".$_REQUEST["host"]."';", $config);
-        $config = preg_replace('#this\-\>dbName \= \'(.*)\'\;#i', "this->dbName = '".$_REQUEST["name"]."';", $config);
-        $config = preg_replace('#this\-\>dbUser \= \'(.*)\'\;#i', "this->dbUser = '".$_REQUEST["user"]."';", $config);
-        $config = preg_replace('#this\-\>dbPwd \= \'(.*)\'\;#i', "this->dbPwd = '".$_REQUEST["pass"]."';", $config);
-
-        $config = preg_replace('#this\-\>sShopURL \= \'(.*)\'\;#i', "this->sShopURL = 'http://".$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"])."';", $config);
-        $config = preg_replace('#this\-\>sSSLShopURL \= \'(.*)\'\;#i', "this->sSSLShopURL = null;", $config);
-        $config = preg_replace('#this\-\>sAdminSSLURL \= \'(.*)\'\;#i', "this->sAdminSSLURL = null;", $config);
-
-        $config = preg_replace('#this\-\>sShopDir \= \'(.*)\'\;#i', "this->sShopDir = '".dirname(__FILE__)."';", $config);
-        $config = preg_replace('#this\-\>sCompileDir \= \'(.*)\'\;#i', "this->sCompileDir = '".dirname(__FILE__)."/tmp';", $config);
-
-        file_put_contents(dirname(__FILE__)."/config.inc.php", $config);
-        
-        echo "Dateirechte wurden gesetzt, die Config Datei wurde bearbeitet<br />";
-        
-        echo 'OXID Shop erfolgreich kopiert, <a href="http://'.$_SERVER["HTTP_HOST"].dirname($_SERVER["REQUEST_URI"]).'/admin/" target="_blank">hier klicken</a> um zum Shop zu gelangen<br />';
-        echo "Bitte loggen Sie sich ein und updaten Sie die Views<br />";
-    }
-    
-    exit(1);
-}
-*/
-
-
 $config = new config();
 
 $filehandler = new filehandling();
@@ -417,6 +290,65 @@ if ($config->getRequestParameter('drone') === 'activate') {
     exit(0);
 }
 
+if(1 == $config->getRequestParameter('ajax')){
+    
+    switch($config->getRequestParameter('spaceStep')){
+        case 1:
+            sleep(1);
+            // Check local dbConnection
+            // Check FTP Connection
+            echo "All checks are fine\n";
+            exit();
+        case 2:
+            sleep(1);
+            // Copy file to FTP
+            // Call the drone
+            echo "Placed the drone to the source.\n Started backup\n";
+            exit();
+        case 3:
+            sleep(1);
+            // Check if export is finished
+            // else sleep
+            echo "Checked the backup. Not yet finished.\n";
+            echo "Wait a bit\n";
+            exit();
+        case 4:
+            sleep(1);
+            echo "Downloading";
+            // Download db and files
+            // Remove drone from source
+            exit();
+        case 5:
+            sleep(1);
+            echo "Import DB";
+            //import Db
+            exit();
+        case 6:
+            sleep(1);
+            echo "Anonymize the DB";
+            // anonymize DB if requested
+            exit();
+        case 7:
+            sleep(1);
+            echo "Extract tar";
+            // extract tar
+            // rename .htaccess to _.htaccess
+            exit();
+        case 8:
+            sleep(1);
+            echo "Redefine Config";
+            // redefine the values in config.inc.php for database, host and path
+            // rerename _.htaccess
+            exit();
+        case 9:
+            //Delete self
+            echo "Finished\n";
+            exit();
+    }
+    
+    exit();
+}
+
 header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
 header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Datum in der Vergangenheit
 
@@ -434,7 +366,7 @@ header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Datum in der Vergangenheit
     color:#222;
 }
 label {
-    display:blokc;
+    display:block;
     float:left;
     clear:both;
     width:10em;
@@ -457,6 +389,9 @@ h2,
     border:solid 1px #ccc;
     padding:1em;
     margin-bottom:2em;
+    clear:both;
+    overflow:auto;
+    max-height:10em;
 }
 #copyright {
     font-size:0.7em;
@@ -491,10 +426,15 @@ h2,
             'shopUrl'	: shopUrl
         },
         function(resdata){
-            $("#result").append(resdata);
-            if(step != 6) {
-                step++;
+            $("#result pre").append(resdata);
+            if(resdata.match(/Wait a bit/) && !resdata.match(/Finished/) )
+            {
                 clone(step);
+            } else {
+                if(step != 9) {
+                    step++;
+                    clone(step);
+                }
             }
         });
     }
@@ -502,8 +442,6 @@ h2,
     var isShown = 0;
         
     function startClone() {
-        
-        endAnim = 1;
         
         $("#todo").fadeOut("slow");
         
@@ -519,7 +457,6 @@ h2,
         
         if(isShown == 0) {
             isShown = 1;
-            $("#result").slideToggle('slow');
             clone(1);
         }
     }
@@ -562,7 +499,7 @@ h2,
         </button>
     </p>
 </div>
-<div id="result"></div>
+    <div id="result"><pre></pre></div>
 </div>
 <div id="copyright">
     Sputnik SSH for OXID by <a href="http://www.pbt-media.com" target="_blank">Alexander Pick</a> and <a href="http://www.marmalade.de/">marmalade</a>
