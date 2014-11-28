@@ -141,7 +141,6 @@ class crypt
  */
 class database
 {
-    
 }
 
 /**
@@ -151,7 +150,7 @@ class database
 class filehandling
 {
     /**
-     * 
+     *
      * @param object $config
      */
     public function writeBackupShellscript(config $config)
@@ -175,7 +174,7 @@ class filehandling
         return $res;
     }
 
-    public function unpackFile( $file_name )
+    public function unpackFile($file_name)
     {
         return true;
     }
@@ -210,7 +209,7 @@ class filehandling
 /**
  * Copy the whole file to the remote host.
  * This is different to the original version.
- * 
+ *
  * @return string name of the remote file
  */
 function launchSputnik()
@@ -380,150 +379,150 @@ $starImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADUAAAA3CAYAAACsLgJ7
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
 <style type="text/css">
 body,td,th {
-	font-family: Arial, Helvetica, sans-serif;
+    font-family: Arial, Helvetica, sans-serif;
 }
 body {
-	margin-left: 0px;
-	margin-top: 0px;
-	margin-right: 0px;
-	margin-bottom: 0px;
-	width: 100%;
-	background-color:#000;
-	overflow:hidden;
-	height:100%;
+    margin-left: 0px;
+    margin-top: 0px;
+    margin-right: 0px;
+    margin-bottom: 0px;
+    width: 100%;
+    background-color:#000;
+    overflow:hidden;
+    height:100%;
 }
 a {
-	color:#FF0000;
-	text-decoration:none;
+    color:#FF0000;
+    text-decoration:none;
 }
 #head {
-	font-family: 'Economica', sans-serif;
-	font-size:90px;
-	margin:0;
-	font-weight:bold;
-	margin-bottom:30px;
+    font-family: 'Economica', sans-serif;
+    font-size:90px;
+    margin:0;
+    font-weight:bold;
+    margin-bottom:30px;
 }
 #slogan {
-	font-size: 15px;
+    font-size: 15px;
 }
 input[type='text'],
 input[type='password'] {
-	border: 1px solid #CCC;
-	width:180px;
+    border: 1px solid #CCC;
+    width:180px;
 }
 #main {
-	width: 400px;
-	float: left;
+    width: 400px;
+    float: left;
 }
 #result {
-	height: 425px;
-	overflow:auto;
-	border: 1px solid #CCC;
-	margin-left:420px;
-	margin-right:30px;
-	display: none;
-	background-color:#000;
-	color:#00CC00;
-	font-family: 'Share Tech Mono', sans-serif;
-	padding:10px;
+    height: 425px;
+    overflow:auto;
+    border: 1px solid #CCC;
+    margin-left:420px;
+    margin-right:30px;
+    display: none;
+    background-color:#000;
+    color:#00CC00;
+    font-family: 'Share Tech Mono', sans-serif;
+    padding:10px;
 }
 
 #frame {
-	width: 100%;
-	margin-top: 50px;
-	background-color:#FFF;
-	padding: 10px;
-	height: 450px;
+    width: 100%;
+    margin-top: 50px;
+    background-color:#FFF;
+    padding: 10px;
+    height: 450px;
 }
 #tab1 {
-	position: relative;
-	left: 0;
+    position: relative;
+    left: 0;
 }
 #tab2 {
-	position: relative;
-	left: 0;
-	display:none;
+    position: relative;
+    left: 0;
+    display:none;
 }
 #tabhead {
-	clear:both;
+    clear:both;
 }
 #copyright {
-	font-size:10px;
-	color:#FFF;
-	text-align:right;
-	padding-right:10px;
+    font-size:10px;
+    color:#FFF;
+    text-align:right;
+    padding-right:10px;
 }
 </style>
 <script language="javascript">
 
-	function switchTab(tab) {
-		if(tab == 1) {
-			$("#tab1").hide();
-			$("#tab2").show();
-		}
-		if(tab == 0) {
-			$("#tab2").hide();
-			$("#tab1").show();
-		}
-	}
+    function switchTab(tab) {
+        if(tab == 1) {
+            $("#tab1").hide();
+            $("#tab2").show();
+        }
+        if(tab == 0) {
+            $("#tab2").hide();
+            $("#tab1").show();
+        }
+    }
 
-	function clone(step) {
-		
-			var host 		= $("#host").val();
-			var user 		= $("#user").val();
-			var name 		= $("#name").val();
-			var pass 		= $("#pass").val();
-			var ftpServer 	= $("#ftpServer").val();
-			var ftpUser 	= $("#ftpUser").val();
-			var ftpPass 	= $("#ftpPass").val();
-			var ftpPath 	= $("#ftpPath").val();
-			var shopUrl 	= $("#shopUrl").val();
-		
-			$.post("<?php $_SERVER['SCRIPT_NAME'] ?>", {
-					'ajax'	   			: 	'1',
-					'spaceStep'			:	step,
-					'host'				:	host,
-					'user'				:	user,
-					'name'				:	name,
-					'pass'				:	pass,
-					'ftpServer'			:	ftpServer,
-					'ftpUser'			:	ftpUser,
-					'ftpPass'			:	ftpPass,
-					'ftpPath'			:	ftpPath,
-					'shopUrl'			:	shopUrl,
-			},
-			function(resdata){
-				$("#result").append(resdata);
-				if(step != 6) {
-					step++;
-					clone(step);
-				}
-			});
-	}
-	
-	var isShown = 0;
+    function clone(step) {
         
-	function startClone() {
-		
-		endAnim = 1;
-		
-		$("#todo").fadeOut("slow");
-		
-		$("#host").prop('disabled', true);
-		$("#user").prop('disabled', true);
-		$("#name").prop('disabled', true);
-		$("#pass").prop('disabled', true);
-		$("#ftpServer").prop('disabled', true);
-		$("#ftpUser").prop('disabled', true);
-		$("#ftpPass").prop('disabled', true);
-		$("#ftpPath").prop('disabled', true);
-		$("#shopUrl").prop('disabled', true);
-		
-		if(isShown == 0) {
-			isShown = 1;
-			$("#result").slideToggle('slow');
-			clone(1);
-		}
+            var host 		= $("#host").val();
+            var user 		= $("#user").val();
+            var name 		= $("#name").val();
+            var pass 		= $("#pass").val();
+            var ftpServer 	= $("#ftpServer").val();
+            var ftpUser 	= $("#ftpUser").val();
+            var ftpPass 	= $("#ftpPass").val();
+            var ftpPath 	= $("#ftpPath").val();
+            var shopUrl 	= $("#shopUrl").val();
+        
+            $.post("<?php $_SERVER['SCRIPT_NAME'] ?>", {
+                    'ajax'	   			: 	'1',
+                    'spaceStep'			:	step,
+                    'host'				:	host,
+                    'user'				:	user,
+                    'name'				:	name,
+                    'pass'				:	pass,
+                    'ftpServer'			:	ftpServer,
+                    'ftpUser'			:	ftpUser,
+                    'ftpPass'			:	ftpPass,
+                    'ftpPath'			:	ftpPath,
+                    'shopUrl'			:	shopUrl,
+            },
+            function(resdata){
+                $("#result").append(resdata);
+                if(step != 6) {
+                    step++;
+                    clone(step);
+                }
+            });
+    }
+    
+    var isShown = 0;
+        
+    function startClone() {
+        
+        endAnim = 1;
+        
+        $("#todo").fadeOut("slow");
+        
+        $("#host").prop('disabled', true);
+        $("#user").prop('disabled', true);
+        $("#name").prop('disabled', true);
+        $("#pass").prop('disabled', true);
+        $("#ftpServer").prop('disabled', true);
+        $("#ftpUser").prop('disabled', true);
+        $("#ftpPass").prop('disabled', true);
+        $("#ftpPath").prop('disabled', true);
+        $("#shopUrl").prop('disabled', true);
+        
+        if(isShown == 0) {
+            isShown = 1;
+            $("#result").slideToggle('slow');
+            clone(1);
+        }
         }
 </script>
 </head>
@@ -613,13 +612,10 @@ $filehandler = new filehandling();
 /**
  * Part for the drone
  */
-if($_REQUEST['drone'] === 'activate')
-{
-
+if ($_REQUEST['drone'] === 'activate') {
     $res = $filehandler->writeBackupShellscript($config);
     
-    if($res === false)
-    {
+    if ($res === false) {
         exit('Problems writing the file');
     }
     
