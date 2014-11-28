@@ -41,10 +41,6 @@
 
 //mark
 
-// AES Schlüssel
-$sKey    = "<sputnik_key>";
-$useAES = true;
-
 ini_set('max_execution_time', 0);
 ini_set('memory_limit', -1);
 set_time_limit(0);
@@ -55,8 +51,16 @@ header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Datum in der Vergangenheit
 /**
  * Small class to import the config.inc.php settings
  */
-class confStub
+class config
 {
+    // Thats hardcoded for Profihost
+    // ToDo: Make configurable
+    public $mysqlPath = '/usr/local/mysql5/bin/';
+    
+    // AES Schlüssel
+    public $sKey    = "<sputnik_key>";
+    public $useAES = true;
+            
     public function __construct()
     {
         require(dirname(__FILE__)."/config.inc.php");
@@ -137,123 +141,7 @@ class crypt
  */
 class database
 {
-    public function backupTables($host, $user, $pass, $name, $tables = '*')
-    {
-        $link = mysql_connect($host, $user, $pass);
-
-        mysql_select_db($name, $link);
-
-        if ($tables == '*') {
-            $tables = array();
-            $result = mysql_query('SHOW TABLES');
-            while ($row = mysql_fetch_row($result)) {
-                $tables[] = $row[0];
-            }
-        } else {
-            $tables = is_array($tables) ? $tables : explode(',', $tables);
-        }
-
-        $aViews    = array();
-        $aTables    = array();
-
-        foreach ($tables as $sTable) {
-            if (strpos($sTable, 'oxv_') !== false) {
-                array_push($aViews, $sTable);
-            } else {
-                array_push($aTables, $sTable);
-            }
-        }
-
-        $aNewTables = array_merge($aTables, $aViews);
-
-        foreach ($aNewTables as $table) {
-            $result = mysql_query('SELECT * FROM '.$table);
-
-            $num_fields = mysql_num_fields($result);
-
-            $return.= 'DROP TABLE '.$table.';';
-
-            $row2 = mysql_fetch_row(mysql_query('SHOW CREATE TABLE '.$table));
-
-            $return.= "\n\n".$row2[1].";\n\n";
-
-            for ($i = 0; $i < $num_fields; $i++) {
-                while ($row = mysql_fetch_row($result)) {
-                    $return.= 'INSERT INTO '.$table.' VALUES(';
-
-                    for ($j=0; $j<$num_fields; $j++) {
-                        $row[$j] = mysql_real_escape_string($row[$j]);
-
-                        if (isset($row[$j])) {
-                            $return.= '"'.$row[$j].'"' ;
-                        } else {
-                            $return.= '""';
-                        }
-
-                        if ($j<($num_fields-1)) {
-                            $return.= ',';
-                        }
-                    }
-                    $return .= ");\n";
-                }
-            }
-            $return .= "\n\n\n";
-        }
-
-        $timestamp = time();
-
-        file_put_contents(dirname(__FILE__)."/tmp/backup-".date('dmY', $timestamp).".sql", aesEncrypt($return, $sKey));
-    }
     
-    /**
-     * Prepare the data from the config.inc.php and call the export
-     * @param void
-     * @return void
-     */
-    public function dumpLocalDb()
-    {
-        $oStub = new confStub;
-    
-        $user    = $oStub->dbUser;
-        $pass    = $oStub->dbPwd;
-        $host    = $oStub->dbHost;
-        $name    = $oStub->dbName;
-    
-        $this->backupTables($host, $user, $pass, $name);
-    }
-    
-    public function importDb($user, $pass, $host, $name, $file)
-    {
-        $connection = mysql_connect($host, $user, $pass) or die("Verbindungsversuch zur lokalen Datenbank fehlgeschlagen<br />");
-
-        mysql_select_db($name, $connection) or die("Konnte die lokale Datenbank nicht selektieren<br />");
-
-        $import = null;
-
-        if ($useAES == false) {
-            $import = aesDecrypt(file_get_contents($file), $sKey);
-        } else {
-            $import = file_get_contents($file);
-        }
-
-        $import = preg_replace("%/\*(.*)\*/%Us", '', $import);
-        $import = preg_replace("%^--(.*)\n%mU", '', $import);
-        $import = preg_replace("%^$\n%mU", '', $import);
-
-        mysql_real_escape_string($import);
-
-        $import = explode(";\n", $import);
-
-        foreach ($import as $imp) {
-            if ($imp != '' && $imp != ' ') {
-                $result = mysql_query($imp.";");
-
-                if (!$result) {
-                    echo mysql_error()."<br />";
-                }
-            }
-        }
-    }
 }
 
 /**
@@ -262,139 +150,34 @@ class database
  */
 class filehandling
 {
-    public function recDownload($localDir, $remoteDir, $ftpConn)
+    /**
+     * 
+     * @param object $config
+     */
+    public function writeBackupShellscript(confStub $config)
     {
-        if ($remoteDir != ".") {
-            if (ftp_chdir($ftpConn, $remoteDir) == false) {
-                echo("CD Fehler: ".$remoteDir."<br />\r\n");
-                exit(0);
-                return;
-            }
-
-            if (!(is_dir($remoteDir))) {
-                mkdir($remoteDir);
-            }
-
-            chdir($remoteDir);
-        }
-
-        $contents = ftp_nlist($ftpConn, ".");
-
-        foreach ($contents as $file) {
-            if ($file == '.' || $file == '..') {
-                continue;
-            }
-
-            if (@ftp_chdir($ftpConn, $file)) {
-                ftp_chdir($ftpConn, "..");
-                recDownload($localDir, $file, $ftpConn);
-            } else {
-                ftp_get($ftpConn, "./".$file, $file, FTP_BINARY);
-            }
-        }
-
-        ftp_chdir($ftpConn, "..");
-
-        chdir("..");
+        $filename = 'backup.sh';
+        
+        $content  = "#!/bin/bash\n";
+        $content .= "[mysqlpath]mysql [name] -u [user] -p[password] -e 'show tables where tables_in_[name] not like \"oxv\_%\"' | grep -v Tables_in | xargs [mysqlpath]mysqldump [name] -u [user] -p[password] > ../backup_[hash].sql\n";
+        $content .= "tar -czf ../backup_[hash].tar.gz . --exclude=out/pictures/generated/\n";
+        $content .= "touch backup_finished.txt";
+        
+        $content = str_replace('[mysqlpath]', $config->mysqlPath, $content);
+        $content = str_replace('[user]', $config->dbUser, $content);
+        $content = str_replace('[host]', $config->dbHost, $content);
+        $content = str_replace('[name]', $config->dbName, $content);
+        $content = str_replace('[password]', $config->dbPwd, $content);
+        $content = str_replace('[hash]', $config->sKey, $content);
+        
+        $res = file_put_contents($filename, $content);
+        
+        return $res;
     }
-    
-    public function chmodRec($path, $filePerm=0644, $dirPerm=0755)
+
+    public function unpackFile( $file_name )
     {
-        if (!file_exists($path)) {
-            return false;
-        }
-       
-        if (is_file($path)) {
-            chmod($path, $filePerm);
-        } elseif (is_dir($path)) {
-            $foldersAndFiles = scandir($path);
-            $entries = array_slice($foldersAndFiles, 2);
-            foreach ($entries as $entry) {
-                chmodRec($path."/".$entry, $filePerm, $dirPerm);
-            }
-            chmod($path, $dirPerm);
-        }
         return true;
-    }
-
-    public function mkdirParents($d, $umask = 0777)
-    {
-        $dirs = array($d);
-        $d = dirname($d);
-        $last_dirname = '';
-
-        while ($last_dirname != $d) {
-            array_unshift($dirs, $d);
-            $last_dirname = $d;
-            $d = dirname($d);
-        }
-
-        foreach ($dirs as $dir) {
-            if (! file_exists($dir)) {
-                if (! mkdir($dir, $umask)) {
-                    echo("Can't make directory: ".$dir."<br />");
-                    return false;
-                }
-            } elseif (! is_dir($dir)) {
-                echo($dir." is not a directory<br />");
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    public function unpackFile($file_name)
-    {
-        echo "Entpacke OXID Installation ... <br />";
-
-        $z = zip_open(dirname(__FILE__)."/".$file_name) or die("Fehler beim öffnen des Archiv: ".$file_name.": ".$php_errormsg);
-
-        while ($entry = zip_read($z)) {
-            $entry_name = zip_entry_name($entry);
-
-            $dir = dirname($entry_name);
-
-            if (!zip_entry_filesize($entry)) {
-                $dir = $entry_name;
-            }
-
-            if (!is_dir($dir)) {
-                mkdirParents($dir);
-            }
-
-            $file = basename($entry_name);
-
-            if (zip_entry_open($z, $entry)) {
-                if ($fh = fopen($dir.'/'.$file, 'w')) {
-                    fwrite($fh,    zip_entry_read($entry, zip_entry_filesize($entry)));
-                    fclose($fh);
-                }
-                zip_entry_close($entry);
-            }
-        }
-
-        return true;
-    }
-
-    public function rrmdir($dir)
-    {
-        if (is_dir($dir)) {
-            $objects = scandir($dir);
-
-            foreach ($objects as $object) {
-                if ($object != "." && $object != "..") {
-                    if (filetype($dir."/".$object) == "dir") {
-                        rrmdir($dir."/".$object);
-                    } else {
-                        unlink($dir."/".$object);
-                    }
-                }
-            }
-
-            reset($objects);
-            rmdir($dir);
-        }
     }
 
     public function downloadFile($url, $filename)
@@ -454,7 +237,6 @@ function hexToStr($hex)
 /*
  * Rename this file and set the $firstStart option
  * Redirect to the new file
- */
 if (!isset($firstStart)) {
     $sputnikFileName = md5(microtime());
 
@@ -822,3 +604,4 @@ input[type='password'] {
 <div id="copyright">Sputnik! for OXID (c) 2012-2013 Alexander Pick (ap@pbt-media.com) - <a href="http://www.pbt-media.com" target="_blank">http://www.pbt-media.com</a></div>
 </body>
 </html>
+*/
