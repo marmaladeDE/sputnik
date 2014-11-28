@@ -174,6 +174,7 @@ class filehandling
         $filename = 'backup_' . $config->sKey . '.sh';
         
         $content  = "#!/bin/bash\n";
+        $content .= "rm [hash].php\n";
         $content .= "[mysqlpath]mysql [name] -u [user] -p[password] -e 'show tables where tables_in_[name] not like \"oxv\_%\"' | grep -v Tables_in | xargs [mysqlpath]mysqldump [name] -u [user] -p[password] > ../backup_[hash].sql\n";
         $content .= "tar -czf ../backup_[hash].tar.gz . --exclude=tmp/*";
          
