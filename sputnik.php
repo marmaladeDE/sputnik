@@ -128,37 +128,6 @@ class filehandling
         
         return $res;
     }
-
-    public function unpackFile($file_name)
-    {
-        return true;
-    }
-
-    public function downloadFile($url, $filename)
-    {
-        unlink(realpath(dirname(__FILE__)."/".$filename));
-
-        echo "Download der neusten OXID CE Version ... <br />";
-
-        $path = dirname(__FILE__)."/".$filename;
-
-        $timeout = 920;
-
-        $fp = fopen($path, 'w');
-
-        $ch = curl_init();
-
-        curl_setopt($ch, CURLOPT_URL, $url);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
-        curl_setopt($ch, CURLOPT_FILE, $fp);
-
-        $data = curl_exec($ch);
-
-        curl_close($ch);
-        fclose($fp);
-
-        return $filename;
-    }
 }
 
 class ftp
