@@ -104,7 +104,6 @@ class filehandling
         $filename = 'backup_' . $config->sKey . '.sh';
         
         $content  = "#!/bin/bash\n";
-        $content .= "rm [hash].php\n";
         $content .= "[mysqlpath]mysql [name] -u [user] -p[password] -e 'show tables where tables_in_[name] not like \"oxv\_%\"' | grep -v Tables_in | xargs [mysqlpath]mysqldump [name] -u [user] -p[password] > ../backup_[hash].sql\n";
         $content .= "tar -czf ../backup_[hash].tar.gz . --exclude=tmp/*";
          
@@ -115,6 +114,8 @@ class filehandling
         }
         
         $content .= "touch backup_finished_[hash].txt";
+        $content .= "rm drone_[hash].php\n";
+        $content .= 'rm backup_[hash].sh';
         
         $content = str_replace('[mysqlpath]', $config->mysqlPath, $content);
         $content = str_replace('[user]', $config->dbUser, $content);
@@ -266,12 +267,14 @@ class drone
     {
         $url  = $this->config->getRequestParameter('shopUrl');
         $url .= '/' . $this->getDroneFilename();
+        $url .= '?drone=activate';
         
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
-        curl_setopt($ch, CURLOPT_FILE, $fp);
+        curl_setopt($ch, CURLOPT_HEADER, TRUE);
         $data = curl_exec($ch);
+        var_dump($data);
         curl_close($ch);
     }
 }
@@ -330,18 +333,19 @@ if (1 == $config->getRequestParameter('ajax')) {
     
     switch ($config->getRequestParameter('spaceStep')) {
         case 1:
-            // Check local dbConnection
-            // Check FTP Connection
-            //echo "Skipped startup tests.\nNo, not your fault. They are simply not implemented yet.\n\n";
-            exit();
-        case 2:
-            sleep(1);
             $launched = $drone->launchDrone();
             if ($launched) {
-                $drone->startRemoteOperation();
-                echo "Placed the drone to the source.\nStarted backup\n\n";
+                echo "Placed the drone to the source.\n\n";
             } else {
-                echo "Drone not landed. Please check the path.\nFinshed\n\n";
+                echo "Drone not landed. Please check the path.\nFinished\n\n";
+            }
+            exit();
+        case 2:
+            $operating = $drone->startRemoteOperation();
+            if($operating) {
+                echo "Started backup\n\n";
+            } else {
+                echo "Could not start the remote operation.\nFinished.\n\n";
             }
             exit();
         case 3:
@@ -476,10 +480,10 @@ h2,
             {
                 clone(step);
             } else {
-                if(step != 9) {
+                if(step != 9 && !resdata.match(/Finished/)) {
                     step++;
                     clone(step);
-                }
+                }  
             }
         });
     }
