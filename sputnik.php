@@ -184,12 +184,15 @@ class drone
     protected $config = null;
     
     protected $ftp = null;
+    
+    protected $filehandler = null;
 
 
-    public function __construct(config $config, ftp $ftp)
+    public function __construct(config $config, ftp $ftp, filehandling $filehandler)
     {
         $this->config = $config;
         $this->ftp = $ftp;
+        $this->filehandler = $filehandler;
     }
 
     /**
@@ -252,11 +255,132 @@ class drone
             return false;
         }
     }
+    
+    public function startNow()
+    {
+        $res = $this->filehandler->writeBackupShellscript($config, true);
+    
+        if ($res === false) {
+            exit('Problems writing the file');
+        }
+
+        exec('sh backup_' . $config->sKey . '.sh > /dev/null 2>&1');
+
+        exit(0);
+    }
 }
 
-$config = new config();
+class host
+{
+    protected $config = null;
+    
+    protected $ftp = null;
+    
+    protected $filehandler = null;
+    
+    protected $drone = null;
 
+
+    public function __construct(config $config, ftp $ftp, filehandling $filehandler, $drone)
+    {
+        $this->config = $config;
+        $this->ftp = $ftp;
+        $this->filehandler = $filehandler;
+        $this->drone = $drone;
+    }
+    
+    public function startHostOperation()
+    {
+        switch ($this->config->getRequestParameter('spaceStep')) {
+            case 1:
+                $launched = $this->drone->launchDrone();
+                if ($launched) {
+                    echo "Placed the drone to the source.\n\n";
+                } else {
+                    echo "Drone not landed. Please check the path.\nFinished\n\n";
+                }
+                exit();
+            case 2:
+                $operating = $this->drone->startRemoteOperation();
+                if($operating) {
+                    echo "Started backup\n\n";
+                } else {
+                    echo "Could not start the remote operation (see message above).\nFinished.\n\n";
+                }
+                exit();
+            case 3:
+                $sleep = $this->checkIfBackupIsFinished();
+                if ($sleep) {
+                    sleep(5);
+                    echo "Checked the backup. Not yet done.\n";
+                    echo "Wait a bit\n\n";
+                } else {
+                    "Backup done.\n\n";
+                }
+                exit();
+            case 4:
+                sleep(1);
+                echo "Downloading\n";
+                // Download db and files
+                // Remove drone from source
+                exit();
+            case 5:
+                sleep(1);
+                echo "Import DB\n";
+                //import Db
+                exit();
+            case 6:
+                sleep(1);
+                echo "Anonymize the DB\n";
+                // anonymize DB if requested
+                exit();
+            case 7:
+                sleep(1);
+                echo "Extract tar\n";
+                // extract tar
+                // rename .htaccess to _.htaccess
+                exit();
+            case 8:
+                sleep(1);
+                echo "Redefine Config\n";
+                // redefine the values in config.inc.php for database, host and path
+                // rerename _.htaccess
+                exit();
+            case 9:
+                //Delete self
+                echo "Finished\n";
+                exit();
+        }
+    }
+    
+    public function checkIfBackupIsFinished()
+    {
+        $url  = $this->config->getRequestParameter('shopUrl');
+        $url .= '/backup_finished_' . $this->config->sKey . '.txt';
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
+        curl_setopt($ch, CURLOPT_HEADER, TRUE);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        $data = curl_exec($ch);
+        curl_close($ch);
+        if(false !== strpos($data, '200 OK')){
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
+
+/**
+ * Preparation of objects
+ */
+$config = new config();
 $filehandler = new filehandling();
+$ftp    = new ftp();
+$drone  = new drone($config, $ftp, $filehandler);
+$host   = new host($config, $ftp, $filehandler, $drone);
 
 /**
  * Part for the initial start.
@@ -286,89 +410,15 @@ if (null === $config->sKey) {
  * Part for the drone
  */
 if ($config->getRequestParameter('drone') === 'activate') {
-    $res = $filehandler->writeBackupShellscript($config, true);
-    
-    if ($res === false) {
-        exit('Problems writing the file');
-    }
-    
-    exec('sh backup_' . $config->sKey . '.sh > /dev/null 2>&1');
-    
-    exit(0);
+    $drone->startNow();
+    exit();
 }
-
-//drone end
 
 /**
  * Everything from here is just needed for the local version
  */
 if (1 == $config->getRequestParameter('ajax')) {
-    $ftp    = new ftp();
-    $drone  = new drone($config, $ftp);
-    
-    switch ($config->getRequestParameter('spaceStep')) {
-        case 1:
-            $launched = $drone->launchDrone();
-            if ($launched) {
-                echo "Placed the drone to the source.\n\n";
-            } else {
-                echo "Drone not landed. Please check the path.\nFinished\n\n";
-            }
-            exit();
-        case 2:
-            $operating = $drone->startRemoteOperation();
-            if($operating) {
-                echo "Started backup\n\n";
-            } else {
-                echo "Could not start the remote operation (see message above).\nFinished.\n\n";
-            }
-            exit();
-        case 3:
-            // Check if export is finished
-            // else sleep
-            $sleep = true;
-            if ($sleep) {
-                sleep(5);
-                echo "Checked the backup. Not yet done.\n";
-                echo "Wait a bidt\n\n";
-            } else {
-                "Backup done.\n\n";
-            }
-            exit();
-        case 4:
-            sleep(1);
-            echo "Downloading\n";
-            // Download db and files
-            // Remove drone from source
-            exit();
-        case 5:
-            sleep(1);
-            echo "Import DB\n";
-            //import Db
-            exit();
-        case 6:
-            sleep(1);
-            echo "Anonymize the DB\n";
-            // anonymize DB if requested
-            exit();
-        case 7:
-            sleep(1);
-            echo "Extract tar\n";
-            // extract tar
-            // rename .htaccess to _.htaccess
-            exit();
-        case 8:
-            sleep(1);
-            echo "Redefine Config\n";
-            // redefine the values in config.inc.php for database, host and path
-            // rerename _.htaccess
-            exit();
-        case 9:
-            //Delete self
-            echo "Finished\n";
-            exit();
-    }
-    
+    $host->startHostOperation();
     exit();
 }
 
