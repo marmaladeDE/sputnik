@@ -1,8 +1,8 @@
 <?php
 /**
 
-    Sputnik! Swiss Army Knife for OXID eShop
-    ====================================================
+    Sputnik SSH Version - Copying your OXID eShop done easy
+    =======================================================
     
     Sputnik! is free to use, please consider a donation
     if you are using this software.
@@ -10,6 +10,7 @@
     LICENSE
     
     Copyright (c) 2012 - 2013 by Alexander Pick (ap@pbt-media.com)
+    and for the SSH version by marmalade Team <support@marmalade.de>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy of this
     software and associated documentation files (the "Software"), to deal in the Software
@@ -95,8 +96,8 @@ class database
 class filehandling
 {
     /**
-     * @param bool $excludeAllPictures Exclude the Pictures from the Backup
      * @param object $config
+     * @param bool $excludeAllPictures Exclude the Pictures from the Backup
      */
     public function writeBackupShellscript(config $config, $excludeAllPictures = false)
     {
@@ -168,10 +169,20 @@ class ftp
      * @param string $localFilePath
      * @return boolean
      */
-    public function copyFileToRemoteHost(config $config, $localFilePath, $droneName)
+    public function copyFileToRemoteHost(config $config, $localFilePath, $remoteFileName)
     {
-        $upload = ftp_put($connection, $config->getRequestParameter("ftpPath") . "/" . $droneName, $localFilePath, FTP_BINARY);
-
+        $connection = $this->startFtpConnection($config);
+        
+        $upload = false;
+        
+        $path = $config->getRequestParameter("ftpPath");
+        
+        if(false != $connection){
+            ftp_chdir($connection, $path);
+            
+            $upload = ftp_put($connection, $remoteFileName, $localFilePath, FTP_BINARY);
+        }
+        
         return $upload;
     }
     
@@ -221,14 +232,15 @@ class drone
     public function launchDrone()
     {
         $buffer = file_get_contents(__FILE__);
-        $array = explode('//drone end', $buffer);
-        $droneContent = $array[0];
+        //$array = explode('//drone end', $buffer);
+        //$droneContent = $array[0];
+        $droneContent = $buffer;
         
         $filename = $this->getDroneFilename();
     
-        file_put_contents($this->getDroneLocalPath(), $buffer);
+        file_put_contents($this->getDroneLocalPath(), $droneContent);
         
-        $res = $this->ftp->copyFileToRemoteHost($this->config, $filePath);
+        $res = $this->ftp->copyFileToRemoteHost($this->config, $this->getDroneLocalPath(), $filename);
         
         unlink($this->getDroneLocalPath());
         
@@ -318,17 +330,16 @@ if (1 == $config->getRequestParameter('ajax')) {
     
     switch ($config->getRequestParameter('spaceStep')) {
         case 1:
-            sleep(1);
             // Check local dbConnection
             // Check FTP Connection
-            echo "Skipped startup tests.\nNo, not your fault. They are simply not implemented yet.\n\n";
+            //echo "Skipped startup tests.\nNo, not your fault. They are simply not implemented yet.\n\n";
             exit();
         case 2:
             sleep(1);
             $launched = $drone->launchDrone();
             if ($launched) {
                 $drone->startRemoteOperation();
-                echo "Placed the drone to the source.\n Started backup\n\n";
+                echo "Placed the drone to the source.\nStarted backup\n\n";
             } else {
                 echo "Drone not landed. Please check the path.\nFinshed\n\n";
             }
