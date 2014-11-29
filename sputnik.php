@@ -520,9 +520,10 @@ h2,
     <input name="ftpPath" type="text" id="ftpPath" value="/httpdocs/" />
     <label for="shopUrl">Shop URL:</label>
     <input name="shopUrl" type="text" value="http://" id="shopUrl" />
+    <label for="excludePics">Exclude pictures:</label>
+    <input name="excludePics" type="checkbox" value="1" id="excludePics" checked disabled />
 </div>
 <div id="todo">
-<p>Was möchten Sie tun?</p>
     <p>
         <button onclick="javascript:startClone();">
             Clone shop from source to target now.
