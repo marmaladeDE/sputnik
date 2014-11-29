@@ -113,7 +113,7 @@ class filehandling
             $content .= " --exclude=out/pictures/generated/* \n";
         }
         
-        $content .= "touch backup_finished_[hash].txt";
+        $content .= "touch backup_finished_[hash].txt\n";
         $content .= "rm drone_[hash].php\n";
         $content .= 'rm backup_[hash].sh';
         
@@ -242,9 +242,15 @@ class drone
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
         curl_setopt($ch, CURLOPT_HEADER, TRUE);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
         $data = curl_exec($ch);
-        var_dump($data);
         curl_close($ch);
+        if(false !== strpos($data, '200 OK')){
+            return true;
+        } else {
+            echo $data;
+            return false;
+        }
     }
 }
 
@@ -314,7 +320,7 @@ if (1 == $config->getRequestParameter('ajax')) {
             if($operating) {
                 echo "Started backup\n\n";
             } else {
-                echo "Could not start the remote operation.\nFinished.\n\n";
+                echo "Could not start the remote operation (see message above).\nFinished.\n\n";
             }
             exit();
         case 3:
