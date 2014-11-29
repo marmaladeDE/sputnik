@@ -57,7 +57,7 @@ class config
     
     public function __construct()
     {
-        if(file_exists(dirname(__FILE__)."/config.inc.php")){
+        if (file_exists(dirname(__FILE__)."/config.inc.php")) {
             require(dirname(__FILE__)."/config.inc.php");
         }
     }
@@ -159,21 +159,101 @@ class filehandling
     }
 }
 
-/**
- * Copy the whole file to the remote host.
- * This is different to the original version.
- *
- * @return string name of the remote file
- */
-function launchSputnik()
+class ftp
 {
-    $buffer = file_get_contents(dirname(__FILE__)."/sputnik.php");
+    /**
+     * Copy the given file to the remote host
+     *
+     * @param object $config
+     * @param string $localFilePath
+     * @return boolean
+     */
+    public function copyFileToRemoteHost(config $config, $localFilePath, $droneName)
+    {
+        $upload = ftp_put($connection, $config->getRequestParameter("ftpPath") . "/" . $droneName, $localFilePath, FTP_BINARY);
+
+        return $upload;
+    }
     
-    $filename = md5(microtime()).".php";
+    public function startFtpConnection(config $config)
+    {
+        $ftpServer  = $config->getRequestParameter("ftpServer");
+        $ftpUser    = $config->getRequestParameter("ftpUser");
+        $ftpPass    = $config->getRequestParameter("ftpPass");
+        
+        $connection = ftp_connect($ftpServer);
+        
+        $login = ftp_login($connection, $ftpUser, $ftpPass);
+
+        if (!$connection || !$login) {
+            return false;
+        }
+        
+        ftp_pasv($connection, true);
+        
+        return $connection;
+    }
+}
+
+class drone
+{
+    public function __construct(config $config, ftp $ftp)
+    {
+        $this->config = $config;
+        $this->ftp = $ftp;
+    }
+
+    /**
+     * Prepare the drone file
+     * Copy to livesystem
+     *
+     * @param object $config
+     * @return bool
+     */
+    public function launchDrone()
+    {
+        $buffer = file_get_contents(__FILE__);
+        $array = explode('//drone end', $buffer);
+        $droneContent = $array[0];
+        
+        $filename = $this->getDroneFilename();
     
-    file_put_contents(dirname(__FILE__)."/".$filename, $buffer);
+        file_put_contents($this->getDroneLocalPath(), $buffer);
+        
+        $res = $this->ftp->copyFileToRemoteHost($this->config, $filePath);
+        
+        unlink($this->getDroneLocalPath());
+        
+        return $res;
+    }
     
-    return $filename;
+    public function getDroneLocalPath()
+    {
+        $droneName = $this->getDroneFilename();
+        
+        return dirname(__FILE__) . '/' . $droneName;
+    }
+
+
+    public function getDroneFilename()
+    {
+        $filename = 'drone_' . $this->config->sKey . '.php';
+    
+        return $filename;
+    }
+    
+    public function startRemoteOperation()
+    {
+        $url  = $this->config->getRequestParameter('shopUrl');
+        $url .= '/' . $this->getDroneFilename();
+        
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
+        curl_setopt($ch, CURLOPT_FILE, $fp);
+        $data = curl_exec($ch);
+        curl_close($ch);
+    }
 }
 
 $config = new config();
@@ -186,7 +266,6 @@ $filehandler = new filehandling();
  * Redirect to the new file.
  */
 if (null === $config->sKey) {
-    
     $sputnikFileName = md5(microtime());
     
     $sputnik = file_get_contents(__FILE__);
@@ -194,6 +273,7 @@ if (null === $config->sKey) {
     $sputnik = str_replace('public $sKey = null;', 'public $sKey = "' . md5(rand().microtime()) . '";', $sputnik);
     
     file_put_contents(dirname(__FILE__) ."/".$sputnikFileName.".php", $sputnik);
+    
     // ToDo: Change when finished
     //unlink(__FILE__);
     
@@ -219,27 +299,43 @@ if ($config->getRequestParameter('drone') === 'activate') {
     exit(0);
 }
 
-if(1 == $config->getRequestParameter('ajax')){
+//drone end
+
+/**
+ * Everything from here is just needed for the local version
+ */
+if (1 == $config->getRequestParameter('ajax')) {
+    $ftp    = new ftp();
+    $drone  = new drone($config, $ftp);
     
-    switch($config->getRequestParameter('spaceStep')){
+    switch ($config->getRequestParameter('spaceStep')) {
         case 1:
             sleep(1);
             // Check local dbConnection
             // Check FTP Connection
-            echo "All checks are fine\n";
+            echo "Skipped startup tests\nNo, not your fault. They are simply not implemented yet.\n\n";
             exit();
         case 2:
             sleep(1);
-            // Copy file to FTP
-            // Call the drone
-            echo "Placed the drone to the source.\n Started backup\n";
+            $launched = $drone->launchDrone();
+            if ($launched) {
+                $drone->startRemoteOperation();
+                echo "Placed the drone to the source.\n Started backup\n\n";
+            } else {
+                echo "Drone not landed. Check yout FTP connection.\nFinished\n";
+            }
             exit();
         case 3:
-            sleep(1);
             // Check if export is finished
             // else sleep
-            echo "Checked the backup. Not yet finished.\n";
-            echo "Wait a bit\n";
+            $sleep = true;
+            if ($sleep) {
+                sleep(5);
+                echo "Checked the backup. Not yet finished.\n";
+                echo "Wait a bit\n";
+            } else {
+                "Backup done.\n\n";
+            }
             exit();
         case 4:
             sleep(1);
@@ -301,7 +397,8 @@ label {
     width:10em;
 }
 input[type='text'],
-input[type='password'] {
+input[type='password'],
+input[type='checkbox'] {
     border: 1px solid #ccc;
     width:10em;
     float:left;
@@ -338,6 +435,7 @@ h2,
         var ftpPass 	= $("#ftpPass").val();
         var ftpPath 	= $("#ftpPath").val();
         var shopUrl 	= $("#shopUrl").val();
+        var anonymize 	= $("#anonymize").val();
 
         $.post("<?php $config->getServerParameter('SCRIPT_NAME') ?>", {
             'ajax'      : '1',
@@ -350,7 +448,8 @@ h2,
             'ftpUser'	: ftpUser,
             'ftpPass'	: ftpPass,
             'ftpPath'	: ftpPath,
-            'shopUrl'	: shopUrl
+            'shopUrl'	: shopUrl,
+            'anonymize'	: anonymize
         },
         function(resdata){
             $("#result pre").append(resdata);
@@ -381,6 +480,7 @@ h2,
         $("#ftpPass").prop('disabled', true);
         $("#ftpPath").prop('disabled', true);
         $("#shopUrl").prop('disabled', true);
+        $("#anonymize").prop('disabled', true);
         
         if(isShown == 0) {
             isShown = 1;
@@ -396,25 +496,27 @@ h2,
 </h1>
 <div id="result"><pre></pre></div>
 <div id="tab1">
-    <h2>Zielsystem</h2>
+    <h2>Target system</h2>
     <label for="host">Host:</label>
     <input name="host" type="text" id="host" value="localhost" />
-    <label for="name">DBName:</label>
+    <label for="name">DB Name:</label>
     <input name="name" type="text" id="name" />
-    <label for="user">DBUser:</label>
+    <label for="user">DB User:</label>
     <input name="user" type="text" id="user" />
-    <label for="pass">DBPass:</label>
+    <label for="pass">DB Password:</label>
     <input name="pass" type="password" id="pass" />
+    <label for="anonymize">Anonymize the data:</label>
+    <input name="anonymize" type="checkbox" value="1" id="anonymize" checked />
 </div>
 <div id="tab2">
-    <h2>Quellsystem</h2>
+    <h2>Source system</h2>
     <label for="ftpServer">FTP Host:</label>
     <input name="ftpServer" type="text" id="ftpServer" value="localhost" />
-    <label for="ftpUser">FTP Benutzer:</label>
+    <label for="ftpUser">FTP User:</label>
     <input name="ftpUser" type="text" id="ftpUser" />
-    <label for="ftpPass">FTP Passwort:</label>
+    <label for="ftpPass">FTP Password:</label>
     <input name="ftpPass" type="password" id="ftpPass" />
-    <label for="ftpPath">FTP Pfad:</label>
+    <label for="ftpPath">FTP Path:</label>
     <input name="ftpPath" type="text" id="ftpPath" value="/httpdocs/" />
     <label for="shopUrl">Shop URL:</label>
     <input name="shopUrl" type="text" value="http://" id="shopUrl" />
@@ -423,7 +525,7 @@ h2,
 <p>Was möchten Sie tun?</p>
     <p>
         <button onclick="javascript:startClone();">
-            Shop auf aktuelles Hosting clonen
+            Clone shop from source to target now.
         </button>
     </p>
 </div>
