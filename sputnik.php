@@ -184,12 +184,15 @@ class ftp
         $connection = ftp_connect($ftpServer);
         
         $login = ftp_login($connection, $ftpUser, $ftpPass);
-
+        
         if (!$connection || !$login) {
+            echo "Could not connect to remote host! Please check your ftp data.\n";
             return false;
         }
         
         ftp_pasv($connection, true);
+        
+        echo "Sucessfully connected to remote host.\n";
         
         return $connection;
     }
@@ -197,6 +200,11 @@ class ftp
 
 class drone
 {
+    protected $config = null;
+    
+    protected $ftp = null;
+
+
     public function __construct(config $config, ftp $ftp)
     {
         $this->config = $config;
@@ -313,7 +321,7 @@ if (1 == $config->getRequestParameter('ajax')) {
             sleep(1);
             // Check local dbConnection
             // Check FTP Connection
-            echo "Skipped startup tests\nNo, not your fault. They are simply not implemented yet.\n\n";
+            echo "Skipped startup tests.\nNo, not your fault. They are simply not implemented yet.\n\n";
             exit();
         case 2:
             sleep(1);
@@ -322,7 +330,7 @@ if (1 == $config->getRequestParameter('ajax')) {
                 $drone->startRemoteOperation();
                 echo "Placed the drone to the source.\n Started backup\n\n";
             } else {
-                echo "Drone not landed. Check yout FTP connection.\nFinished\n";
+                echo "Drone not landed. Please check the path.\nFinshed\n\n";
             }
             exit();
         case 3:
@@ -331,37 +339,37 @@ if (1 == $config->getRequestParameter('ajax')) {
             $sleep = true;
             if ($sleep) {
                 sleep(5);
-                echo "Checked the backup. Not yet finished.\n";
-                echo "Wait a bit\n";
+                echo "Checked the backup. Not yet done.\n";
+                echo "Wait a bidt\n\n";
             } else {
                 "Backup done.\n\n";
             }
             exit();
         case 4:
             sleep(1);
-            echo "Downloading";
+            echo "Downloading\n";
             // Download db and files
             // Remove drone from source
             exit();
         case 5:
             sleep(1);
-            echo "Import DB";
+            echo "Import DB\n";
             //import Db
             exit();
         case 6:
             sleep(1);
-            echo "Anonymize the DB";
+            echo "Anonymize the DB\n";
             // anonymize DB if requested
             exit();
         case 7:
             sleep(1);
-            echo "Extract tar";
+            echo "Extract tar\n";
             // extract tar
             // rename .htaccess to _.htaccess
             exit();
         case 8:
             sleep(1);
-            echo "Redefine Config";
+            echo "Redefine Config\n";
             // redefine the values in config.inc.php for database, host and path
             // rerename _.htaccess
             exit();
@@ -533,17 +541,17 @@ h2,
 </div>
 <div id="copyright">
     Sputnik SSH for OXID by <a href="http://www.pbt-media.com" target="_blank">Alexander Pick</a> and <a href="http://www.marmalade.de/">marmalade</a>
-    <br>
-    <br>
+    <br />
+    <br />
     <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
-        <input type="hidden" name="cmd" value="_donations">
-        <input type="hidden" name="business" value="webmaster@ttyseven.com">
-        <input type="hidden" name="lc" value="DE">
-        <input type="hidden" name="no_note" value="0">
-        <input type="hidden" name="currency_code" value="EUR">
-        <input type="hidden" name="bn" value="PP-DonationsBF:btn_donate_SM.gif:NonHostedGuest">
-        <input type="image" src="https://www.paypalobjects.com/de_DE/DE/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="Jetzt einfach, schnell und sicher online bezahlen – mit PayPal.">
-        <img alt="" border="0" src="https://www.paypalobjects.com/de_DE/i/scr/pixel.gif" width="1" height="1">
+        <input type="hidden" name="cmd" value="_donations" />
+        <input type="hidden" name="business" value="webmaster@ttyseven.com" />
+        <input type="hidden" name="lc" value="DE" />
+        <input type="hidden" name="no_note" value="0" />
+        <input type="hidden" name="currency_code" value="EUR" />
+        <input type="hidden" name="bn" value="PP-DonationsBF:btn_donate_SM.gif:NonHostedGuest" />
+        <input type="image" src="https://www.paypalobjects.com/de_DE/DE/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="Jetzt einfach, schnell und sicher online bezahlen – mit PayPal." />
+        <img alt="" border="0" src="https://www.paypalobjects.com/de_DE/i/scr/pixel.gif" width="1" height="1" />
     </form>
 </div>
 </body>
