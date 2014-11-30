@@ -132,6 +132,16 @@ class filehandling
 
 class ftp
 {
+
+    protected $config = null;
+    
+    protected $connection = null;
+
+    public function __construct(config $config)
+    {
+        $this->config = $config;
+    }
+    
     /**
      * Copy the given file to the remote host
      *
@@ -139,9 +149,9 @@ class ftp
      * @param string $localFilePath
      * @return boolean
      */
-    public function copyFileToRemoteHost(config $config, $localFilePath, $remoteFileName)
+    public function copyFileToRemoteHost($localFilePath, $remoteFileName)
     {
-        $connection = $this->startFtpConnection($config);
+        $connection = $this->startFtpConnection();
         
         $upload = false;
         
@@ -156,11 +166,16 @@ class ftp
         return $upload;
     }
     
-    public function startFtpConnection(config $config)
+    public function startFtpConnection()
     {
-        $ftpServer  = $config->getRequestParameter("ftpServer");
-        $ftpUser    = $config->getRequestParameter("ftpUser");
-        $ftpPass    = $config->getRequestParameter("ftpPass");
+        if(null !== $this->connection)
+        {
+            return $this->connection;
+        }
+        
+        $ftpServer  = $this->config->getRequestParameter("ftpServer");
+        $ftpUser    = $this->config->getRequestParameter("ftpUser");
+        $ftpPass    = $this->config->getRequestParameter("ftpPass");
         
         $connection = ftp_connect($ftpServer);
         
@@ -175,7 +190,31 @@ class ftp
         
         echo "Sucessfully connected to remote host.\n";
         
+        $this->connection = $connection;
+        
         return $connection;
+    }
+    
+    public function downloadBackupedFile($filename)
+    {
+        $connection = $this->startFtpConnection();
+        
+        ftp_chdir($connection, $this->config->getRequestParameter('ftpPath'));
+        
+        ftp_cdup($connection);
+        
+        $downloaded = ftp_get($connection, $filename, $filename, FTP_BINARY);
+        
+        return $downloaded;
+    }
+    
+    public function deleteFile($filename, $path)
+    {
+        $connection = $this->startFtpConnection();
+        
+        $res = ftp_delete($connection, $path . $filename);
+        
+        return $res;
     }
 }
 
@@ -213,11 +252,20 @@ class drone
     
         file_put_contents($this->getDroneLocalPath(), $droneContent);
         
-        $res = $this->ftp->copyFileToRemoteHost($this->config, $this->getDroneLocalPath(), $filename);
+        $res = $this->ftp->copyFileToRemoteHost($this->getDroneLocalPath(), $filename);
         
         unlink($this->getDroneLocalPath());
         
         return $res;
+    }
+    
+    public function removeStatusfile()
+    {
+        $statusfile = 'backup_finished_' . $this->config->sKey . '.txt';
+        
+        $path = $this->config->getRequestParameter('ftpPath');
+                
+        $this->ftp->deleteFile($statusfile, $path);
     }
     
     public function getDroneLocalPath()
@@ -258,7 +306,7 @@ class drone
     
     public function startNow()
     {
-        $res = $this->filehandler->writeBackupShellscript($this->config, true);
+        $res = $this->filehandler->writeBackupShellscript($this->config, false);
     
         if ($res === false) {
             exit('Problems writing the file');
@@ -313,16 +361,17 @@ class host
                 if (!$finished) {
                     echo "Checked the backup. Not yet done.\n";
                     echo "Wait a bit\n\n";
+                    flush();
                     sleep(10);
                 } else {
-                    "Backup done.\n\n";
+                    echo "Backup done.\n\n";
                 }   
                 exit();
             case 4:
-                sleep(1);
                 echo "Downloading\n";
-                // Download db and files
-                // Remove drone from source
+                flush();
+                $this->drone->removeStatusfile();
+                $downloaded = $this->downloadBackupfiles();
                 exit();
             case 5:
                 sleep(1);
@@ -353,6 +402,13 @@ class host
         }
     }
     
+    public function downloadBackupfiles()
+    {
+        $this->ftp->downloadBackupedFile($sqlfile);
+        
+        $this->ftp->downloadBackupedFile($tararchive);
+    }
+    
     public function checkIfBackupIsFinished()
     {
         $url  = $this->config->getRequestParameter('shopUrl');
@@ -379,7 +435,7 @@ class host
  */
 $config = new config();
 $filehandler = new filehandling();
-$ftp    = new ftp();
+$ftp    = new ftp($config);
 $drone  = new drone($config, $ftp, $filehandler);
 $host   = new host($config, $ftp, $filehandler, $drone);
 
