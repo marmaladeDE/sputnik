@@ -132,7 +132,6 @@ class filehandling
 
 class ftp
 {
-
     protected $config = null;
     
     protected $connection = null;
@@ -157,7 +156,7 @@ class ftp
         
         $path = $config->getRequestParameter("ftpPath");
         
-        if(false != $connection){
+        if (false != $connection) {
             ftp_chdir($connection, $path);
             
             $upload = ftp_put($connection, $remoteFileName, $localFilePath, FTP_BINARY);
@@ -168,8 +167,7 @@ class ftp
     
     public function startFtpConnection()
     {
-        if(null !== $this->connection)
-        {
+        if (null !== $this->connection) {
             return $this->connection;
         }
         
@@ -292,12 +290,12 @@ class drone
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
-        curl_setopt($ch, CURLOPT_TIMEOUT,1);
-        curl_setopt($ch, CURLOPT_HEADER, TRUE);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 1);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $data = curl_exec($ch);
         curl_close($ch);
-        if(false !== strpos($data, '200 OK') || empty($data)){
+        if (false !== strpos($data, '200 OK') || empty($data)) {
             return true;
         } else {
             return false;
@@ -350,7 +348,7 @@ class host
                 exit();
             case 2:
                 $operating = $this->drone->startRemoteOperation();
-                if($operating) {
+                if ($operating) {
                     echo "Started backup\n\n";
                 } else {
                     echo "Could not start the remote operation (see message above).\nFinished.\n\n";
@@ -365,7 +363,7 @@ class host
                     sleep(10);
                 } else {
                     echo "Backup done.\n\n";
-                }   
+                }
                 exit();
             case 4:
                 echo "Downloading\n";
@@ -421,12 +419,12 @@ class host
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
-        curl_setopt($ch, CURLOPT_TIMEOUT,1);
-        curl_setopt($ch, CURLOPT_HEADER, TRUE);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 1);
+        curl_setopt($ch, CURLOPT_HEADER, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         $data = curl_exec($ch);
         curl_close($ch);
-        if(false !== strpos($data, '200 OK')){
+        if (false !== strpos($data, '200 OK')) {
             return true;
         } else {
             return false;
@@ -569,7 +567,7 @@ h2,
                 if(step != 9 && !resdata.match(/Finished/)) {
                     step++;
                     clone(step);
-                }  
+                }
             }
         });
     }
