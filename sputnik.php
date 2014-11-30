@@ -482,7 +482,7 @@ class host
     
     public function extractBackup()
     {
-        $system('tar -xzf backup_' . $this->config->sKey . '.tar.gz');
+        system('tar -xzf backup_' . $this->config->sKey . '.tar.gz');
     }
 
         public function downloadBackupfiles()
