@@ -97,7 +97,8 @@ class database
     public function importBackupInLocalDb()
     {
         $c = $this->config;
-        $cmd = 'mysql  ' . $c->getRequestParameter('name') . ' -h ' . $c->getRequestParameter('host') . ' -u ' . $c->getRequestParameter('user') . ' -p' . $c->getRequestParameter('pass') . ' < backup_' . $c->sKey . '.sql';
+        $cmd  = 'gunzip < backup_' . $c->sKey . '.sql.gz | ';
+        $cmd .= 'mysql  ' . $c->getRequestParameter('name') . ' -h ' . $c->getRequestParameter('host') . ' -u ' . $c->getRequestParameter('user') . ' -p' . $c->getRequestParameter('pass');
         
         system($cmd);
     }
@@ -118,7 +119,7 @@ class filehandling
         $filename = 'backup_' . $config->sKey . '.sh';
         
         $content  = "#!/bin/bash\n";
-        $content .= "[mysqlpath]mysql [name] -u [user] -p[password] -e 'show tables where tables_in_[name] not like \"oxv\_%\"' | grep -v Tables_in | xargs [mysqlpath]mysqldump [name] -u [user] -p[password] > ../backup_[hash].sql\n";
+        $content .= "[mysqlpath]mysql [name] -u [user] -p[password] -e 'show tables where tables_in_[name] not like \"oxv\_%\"' | grep -v Tables_in | xargs [mysqlpath]mysqldump [name] -u [user] -p[password] | gzip -9 > ../backup_[hash].sql.gz\n";
         $content .= "tar -czf ../backup_[hash].tar.gz . --exclude=tmp/*";
          
         if ($excludeAllPictures) {
@@ -418,7 +419,7 @@ class host
     
     public function downloadBackupfiles()
     {
-        $sqlfile = 'backup_' . $this->config->sKey . '.sql';
+        $sqlfile = 'backup_' . $this->config->sKey . '.sql.gz';
         
         $tararchive = 'backup_' . $this->config->sKey . '.tar.gz';
         
