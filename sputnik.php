@@ -1,16 +1,16 @@
 <?php
 /**
-
-    Sputnik SSH Version - Copying your OXID eShop done easy
-    =======================================================
-    
-    Sputnik! is free to use, please consider a donation
-    if you are using this software.
+ *
+ *  Sputnik SSH Version - Copying your OXID eShop done easy
+ *  =======================================================
+ *  
+ *  Sputnik! is free to use.
+ * 
+ *  Its conecpt highly influenced by the Sputnik! Script from Alexander Pick (ap@pbt-media.com)
     
     LICENSE
     
-    Copyright (c) 2012 - 2013 by Alexander Pick (ap@pbt-media.com)
-    and for the SSH version by marmalade Team <support@marmalade.de>
+    Copyright (c) 2014 by marmalade Team <support@marmalade.de>
 
     Permission is hereby granted, free of charge, to any person obtaining a copy of this
     software and associated documentation files (the "Software"), to deal in the Software
@@ -28,14 +28,11 @@
     OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
     OTHER DEALINGS IN THE SOFTWARE.
     
-    More on Sputnik! at https://www.pbt-media.com
-    
     ====================================================
  *
- * This version is extended by marmalade for our use to clone a complete version
+ * This version is build by marmalade for our use to clone a complete version
  * of a live system into a stage or dev system.
  *
- * @author Alexander Pick <ap@pbt-media.com>
  * @author Joscha Krug <support@marmalade.de>
  *
  */
@@ -88,10 +85,48 @@ class config
 class database
 {
     protected $config = null;
+    
+    protected $connection = null;
 
     public function __construct(config $config)
     {
         $this->config = $config;
+    }
+    
+    protected function _getMySqlConnection()
+    {
+        if(null !== $this->connection){
+            return $this->connection;
+        }
+        
+        $c = $this->config;
+        
+        $host = $c->getRequestParameter('host');
+        $user = $c->getRequestParameter('user');
+        $pass = $c->getRequestParameter('pass');
+        $name = $c->getRequestParameter('name');
+        
+        $connection = mysqli_connect($host, $user, $pass, $name);
+        
+        $this->connection = $connection;
+        
+        return $connection;
+    }
+
+
+    public function anonymizeTheDb()
+    {
+        $command1 = 'UPDATE oxuser SET `OXUSERNAME` = concat(`OXCUSTNR`, \'support@marmalade.de\') WHERE `OXRIGHTS` = \'user\'';
+
+        $command2 = 'UPDATE oxorder SET `OXBILLEMAIL` = concat(`OXORDERNR`, \'support@marmalade.de\')';
+        
+        // ToDo: Remove more data like names and adresses
+        
+        $connection = $this->_getMySqlConnection();
+        
+        mysqli_query($connection, $command1);
+        
+        mysqli_query($connection, $command2);
     }
     
     public function importBackupInLocalDb()
@@ -394,30 +429,31 @@ class host
                 $this->db->importBackupInLocalDb();
                 exit();
             case 6:
-                sleep(1);
                 echo "Anonymize the DB\n";
-                // anonymize DB if requested
+                $this->db->anonymizeTheDb();
                 exit();
             case 7:
-                sleep(1);
                 echo "Extract tar\n";
-                // extract tar
-                // rename .htaccess to _.htaccess
+                $this->extractBackup();
                 exit();
             case 8:
-                sleep(1);
                 echo "Redefine Config\n";
                 // redefine the values in config.inc.php for database, host and path
                 // rerename _.htaccess
                 exit();
             case 9:
-                //Delete self
+                echo "Please login to your local OXID eShop please and update views.";
                 echo "Finished\n";
                 exit();
         }
     }
     
-    public function downloadBackupfiles()
+    public function extractBackup()
+    {
+        $system('tar -xzf backup_' . $this->config->sKey . '.tar.gz');
+    }
+
+        public function downloadBackupfiles()
     {
         $sqlfile = 'backup_' . $this->config->sKey . '.sql.gz';
         
@@ -631,7 +667,7 @@ h2,
     <label for="pass">DB Password:</label>
     <input name="pass" type="password" id="pass" />
     <label for="anonymize">Anonymize the data:</label>
-    <input name="anonymize" type="checkbox" value="1" id="anonymize" checked />
+    <input name="anonymize" type="checkbox" value="1" id="anonymize" checked disabled />
 </div>
 <div id="tab2">
     <h2>Source system</h2>
