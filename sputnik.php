@@ -244,27 +244,27 @@ class drone
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
+        curl_setopt($ch, CURLOPT_TIMEOUT,1);
         curl_setopt($ch, CURLOPT_HEADER, TRUE);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
         $data = curl_exec($ch);
         curl_close($ch);
-        if(false !== strpos($data, '200 OK')){
+        if(false !== strpos($data, '200 OK') || empty($data)){
             return true;
         } else {
-            echo $data;
             return false;
         }
     }
     
     public function startNow()
     {
-        $res = $this->filehandler->writeBackupShellscript($config, true);
+        $res = $this->filehandler->writeBackupShellscript($this->config, true);
     
         if ($res === false) {
             exit('Problems writing the file');
         }
 
-        exec('sh backup_' . $config->sKey . '.sh > /dev/null 2>&1');
+        exec('sh backup_' . $this->config->sKey . '.sh > /dev/null 2>&1');
 
         exit(0);
     }
@@ -309,14 +309,14 @@ class host
                 }
                 exit();
             case 3:
-                $sleep = $this->checkIfBackupIsFinished();
-                if ($sleep) {
-                    sleep(5);
+                $finished = $this->checkIfBackupIsFinished();
+                if (!$finished) {
                     echo "Checked the backup. Not yet done.\n";
                     echo "Wait a bit\n\n";
+                    sleep(10);
                 } else {
                     "Backup done.\n\n";
-                }
+                }   
                 exit();
             case 4:
                 sleep(1);
@@ -361,6 +361,7 @@ class host
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
+        curl_setopt($ch, CURLOPT_TIMEOUT,1);
         curl_setopt($ch, CURLOPT_HEADER, TRUE);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
         $data = curl_exec($ch);
