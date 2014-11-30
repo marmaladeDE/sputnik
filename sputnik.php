@@ -87,6 +87,20 @@ class config
  */
 class database
 {
+    protected $config = null;
+
+    public function __construct(config $config)
+    {
+        $this->config = $config;
+    }
+    
+    public function importBackupInLocalDb()
+    {
+        $c = $this->config;
+        $cmd = 'mysql  ' . $c->getRequestParameter('name') . ' -h ' . $c->getRequestParameter('host') . ' -u ' . $c->getRequestParameter('user') . ' -p' . $c->getRequestParameter('pass') . ' < backup_' . $c->sKey . '.sql';
+        
+        system($cmd);
+    }
 }
 
 /**
@@ -154,14 +168,13 @@ class ftp
         
         $upload = false;
         
-        $path = $config->getRequestParameter("ftpPath");
+        $path = $this->config->getRequestParameter("ftpPath");
         
         if (false != $connection) {
             ftp_chdir($connection, $path);
             
             $upload = ftp_put($connection, $remoteFileName, $localFilePath, FTP_BINARY);
         }
-        
         return $upload;
     }
     
@@ -291,8 +304,8 @@ class drone
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
         curl_setopt($ch, CURLOPT_TIMEOUT, 1);
-        curl_setopt($ch, CURLOPT_HEADER, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HEADER, TRUE);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
         $data = curl_exec($ch);
         curl_close($ch);
         if (false !== strpos($data, '200 OK') || empty($data)) {
@@ -325,14 +338,17 @@ class host
     protected $filehandler = null;
     
     protected $drone = null;
+    
+    protected $db = null;
 
 
-    public function __construct(config $config, ftp $ftp, filehandling $filehandler, $drone)
+    public function __construct(config $config, ftp $ftp, filehandling $filehandler, drone $drone, database $db)
     {
         $this->config = $config;
         $this->ftp = $ftp;
         $this->filehandler = $filehandler;
         $this->drone = $drone;
+        $this->db = $db;
     }
     
     public function startHostOperation()
@@ -372,9 +388,9 @@ class host
                 $downloaded = $this->downloadBackupfiles();
                 exit();
             case 5:
-                sleep(1);
                 echo "Import DB\n";
-                //import Db
+                flush();
+                $this->db->importBackupInLocalDb();
                 exit();
             case 6:
                 sleep(1);
@@ -420,8 +436,8 @@ class host
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
         curl_setopt($ch, CURLOPT_TIMEOUT, 1);
-        curl_setopt($ch, CURLOPT_HEADER, true);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HEADER, TRUE);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
         $data = curl_exec($ch);
         curl_close($ch);
         if (false !== strpos($data, '200 OK')) {
@@ -438,8 +454,9 @@ class host
 $config = new config();
 $filehandler = new filehandling();
 $ftp    = new ftp($config);
+$db     = new database($config);
 $drone  = new drone($config, $ftp, $filehandler);
-$host   = new host($config, $ftp, $filehandler, $drone);
+$host   = new host($config, $ftp, $filehandler, $drone, $db);
 
 /**
  * Part for the initial start.
