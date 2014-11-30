@@ -58,10 +58,17 @@ class config
         if (file_exists(dirname(__FILE__)."/config.inc.php")) {
             require(dirname(__FILE__)."/config.inc.php");
         }
+        if (file_exists(dirname(__FILE__)."/sputnik.config.inc.php")) {
+            require(dirname(__FILE__)."/sputnik.config.inc.php");
+        }
     }
     
     public function getRequestParameter($name)
     {
+        if(isset($this->sputnik[$name])){
+            return $this->sputnik[$name];
+        }
+        
         if (!isset($_REQUEST[$name])) {
             return false;
         }
@@ -145,12 +152,20 @@ class database
  */
 class filehandling
 {
-    /**
+    protected $config = null;
+    
+    public function __construct(config $config) {
+        $this->config = $config;
+    }
+
+        /**
      * @param object $config
      * @param bool $excludeAllPictures Exclude the Pictures from the Backup
      */
-    public function writeBackupShellscript(config $config, $excludeAllPictures = false)
+    public function writeBackupShellscript($excludeAllPictures = false)
     {
+        $config =  $this->config;
+        
         $filename = 'backup_' . $config->sKey . '.sh';
         
         $content  = "#!/bin/bash\n";
@@ -173,6 +188,22 @@ class filehandling
         $content = str_replace('[name]', $config->dbName, $content);
         $content = str_replace('[password]', $config->dbPwd, $content);
         $content = str_replace('[hash]', $config->sKey, $content);
+        
+        $res = file_put_contents($filename, $content);
+        
+        return $res;
+    }
+    
+    public function writeSputnikConfig()
+    {
+        $filename = 'sputnik.config.inc.php';
+        
+        $content  = "<?php\n";
+        foreach($_REQUEST as $key=>$val){
+            if(!in_array($key, array('spaceStep','ajax','drone'))){
+                $content .= '$this->sputnik["' . $key . '"] = \'' . $this->config->getRequestParameter($key) . "';\n";
+            }
+        }
         
         $res = file_put_contents($filename, $content);
         
@@ -353,7 +384,7 @@ class drone
     
     public function startNow()
     {
-        $res = $this->filehandler->writeBackupShellscript($this->config, true);
+        $res = $this->filehandler->writeBackupShellscript(true);
     
         if ($res === false) {
             exit('Problems writing the file');
@@ -391,6 +422,7 @@ class host
     {
         switch ($this->config->getRequestParameter('spaceStep')) {
             case 1:
+                $this->filehandler->writeSputnikConfig();
                 $launched = $this->drone->launchDrone();
                 if ($launched) {
                     echo "Placed the drone to the source.\n\n";
@@ -489,11 +521,11 @@ class host
  * Preparation of objects
  */
 $config = new config();
-$filehandler = new filehandling();
+$fh     = new filehandling($config);
 $ftp    = new ftp($config);
 $db     = new database($config);
-$drone  = new drone($config, $ftp, $filehandler);
-$host   = new host($config, $ftp, $filehandler, $drone, $db);
+$drone  = new drone($config, $ftp, $fh);
+$host   = new host($config, $ftp, $fh, $drone, $db);
 
 /**
  * Part for the initial start.
@@ -587,30 +619,32 @@ h2,
 
     function clone(step)
     {
-        var host 	= $("#host").val();
-        var user 	= $("#user").val();
-        var name 	= $("#name").val();
-        var pass 	= $("#pass").val();
-        var ftpServer 	= $("#ftpServer").val();
-        var ftpUser 	= $("#ftpUser").val();
-        var ftpPass 	= $("#ftpPass").val();
-        var ftpPath 	= $("#ftpPath").val();
-        var shopUrl 	= $("#shopUrl").val();
-        var anonymize 	= $("#anonymize").val();
-
-        $.post("<?php $config->getServerParameter('SCRIPT_NAME') ?>", {
+        if(step == 1){
+            var host 	= $("#host").val();
+            var user 	= $("#user").val();
+            var name 	= $("#name").val();
+            var pass 	= $("#pass").val();
+            var ftpServer 	= $("#ftpServer").val();
+            var ftpUser 	= $("#ftpUser").val();
+            var ftpPass 	= $("#ftpPass").val();
+            var ftpPath 	= $("#ftpPath").val();
+            var shopUrl 	= $("#shopUrl").val();
+            var anonymize 	= $("#anonymize").val();
+        }
+        $.post("<?php echo $config->getServerParameter('SCRIPT_NAME') ?>", {
+            'host'      : host,
+            'user'      : user,
+            'name'      : name,
+            'pass'      : pass,
+            'ftpServer' : ftpServer,
+            'ftpUser'   : ftpUser,
+            'ftpPass'   : ftpPass,
+            'ftpPath'   : ftpPath,
+            'shopUrl'   : shopUrl,
+            'anonymize' : anonymize,
             'ajax'      : '1',
-            'spaceStep' : step,
-            'host'	: host,
-            'user'	: user,
-            'name'	: name,
-            'pass'	: pass,
-            'ftpServer'	: ftpServer,
-            'ftpUser'	: ftpUser,
-            'ftpPass'	: ftpPass,
-            'ftpPath'	: ftpPath,
-            'shopUrl'	: shopUrl,
-            'anonymize'	: anonymize
+            'spaceStep' : step
+            
         },
         function(resdata){
             $("#result pre").append(resdata);
