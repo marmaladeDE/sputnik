@@ -306,7 +306,7 @@ class drone
     
     public function startNow()
     {
-        $res = $this->filehandler->writeBackupShellscript($this->config, false);
+        $res = $this->filehandler->writeBackupShellscript($this->config, true);
     
         if ($res === false) {
             exit('Problems writing the file');
@@ -404,6 +404,10 @@ class host
     
     public function downloadBackupfiles()
     {
+        $sqlfile = 'backup_' . $this->config->sKey . '.sql';
+        
+        $tararchive = 'backup_' . $this->config->sKey . '.tar.gz';
+        
         $this->ftp->downloadBackupedFile($sqlfile);
         
         $this->ftp->downloadBackupedFile($tararchive);
